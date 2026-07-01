@@ -1,0 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;700&display=swap');
+
+:root {
+  --bg-color: #f7f3eb; /* Paper grain base */
+  --text-color: #4a4a4a; /* Soft charcoal */
+  --accent-color: #c4d7d1; /* Soft watercolor blue/green */
+  --vani-glow: rgba(255, 235, 133, 0.6);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Urbanist', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  /* Add subtle paper texture using pure css radial gradients */
+  background-image: radial-gradient(#e0dcd2 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Transiciones lentas */
+.fade-in {
+  animation: fadeIn 1s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
