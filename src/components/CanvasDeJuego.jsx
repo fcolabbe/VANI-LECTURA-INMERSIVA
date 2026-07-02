@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { vaniData } from '../data/vaniData';
-import { actividadesData, ENGINE_TYPES } from '../data/actividadesData';
+import { ENGINE_TYPES } from '../data/actividadesData';
 
 // Motores Universales
 import LaberintoJuego from './juegos/LaberintoJuego'; // Alias: LaberintoEngine
@@ -13,6 +13,11 @@ import SombrasEngine from './juegos/SombrasEngine';
 import MemoryEngine from './juegos/MemoryEngine';
 import RevealEngine from './juegos/RevealEngine';
 import ColorEngine from './juegos/ColorEngine';
+import TrazoEngine from './juegos/TrazoEngine';
+import ArrastreEngine from './juegos/ArrastreEngine';
+import DeletreoEngine from './juegos/DeletreoEngine';
+import QuizEngine from './juegos/QuizEngine';
+import PausaActivaEngine from './juegos/PausaActivaEngine';
 
 export default function CanvasDeJuego() {
   const { personaje } = useParams();
@@ -107,34 +112,47 @@ export default function CanvasDeJuego() {
   );
 }
 
-// --- DYNAMIC BIOME GAME (CONSUME actividadesData.js) ---
+import { useTelemetry } from '../hooks/useTelemetry';
+import { useActivities } from '../hooks/useActivities';
+
+// --- DYNAMIC BIOME GAME (CONSUME useActivities) ---
 function DynamicBiomeGame({ personajeId, capituloNum, onComplete, onBack }) {
-  const [faseActual, setFaseActual] = useState(1); // 1, 2, 3
+  const [faseActual, setFaseActual] = useState(0); // Index 0, 1, 2 for the 3 activities
   const [validatedImage, setValidatedImage] = useState(null);
+  const { recordActivity } = useTelemetry();
+  const { getActivitiesForChapter } = useActivities();
   
-  const actividadesDelCapitulo = actividadesData[personajeId]?.[`capitulo_${capituloNum}`];
+  // Nivel de dificultad heurístico: 1 (caps 1-5), 2 (caps 6-10), 3 (caps 11-15)
+  const nivel = capituloNum <= 5 ? 1 : capituloNum <= 10 ? 2 : 3;
   
-  if (!actividadesDelCapitulo) {
-    return <div style={{padding: '2rem'}}>Error: No hay actividades definidas para {personajeId} cap {capituloNum}.</div>;
-  }
+  // Obtenemos las 3 actividades persistentes para este capítulo (1 de cada eje)
+  const [actividades, setActividades] = useState([]);
 
-  const actividadFase = actividadesDelCapitulo[`fase${faseActual}`];
-
-  // Lógica de fallback para imágenes que aún no han sido generadas
   React.useEffect(() => {
-    if (!actividadFase) return;
+    const acts = getActivitiesForChapter(personajeId, capituloNum, nivel);
+    setActividades(acts);
+  }, [personajeId, capituloNum, nivel, getActivitiesForChapter]);
+
+  const actividadActual = actividades[faseActual];
+
+  // Lógica de fallback para imágenes
+  React.useEffect(() => {
+    if (!actividadActual) return;
     setValidatedImage(null); // Reset while loading
     const img = new Image();
-    img.src = actividadFase.imagenAsset;
-    img.onload = () => setValidatedImage(actividadFase.imagenAsset);
+    img.src = actividadActual.imagenAsset;
+    img.onload = () => setValidatedImage(actividadActual.imagenAsset);
     img.onerror = () => setValidatedImage('/personaje_cuento0.png'); // Fallback seguro
-  }, [actividadFase]);
+  }, [actividadActual]);
 
   const handleEngineComplete = (metricasSilenciosas) => {
-    console.log(`Fase ${faseActual} Completada:`, metricasSilenciosas);
-    // En un futuro, enviaremos estas metricasSilenciosas a Firebase.
+    console.log(`Fase ${faseActual + 1} Completada:`, metricasSilenciosas);
     
-    if (faseActual < 3) {
+    if (metricasSilenciosas) {
+      recordActivity(actividadActual.motor, metricasSilenciosas);
+    }
+    
+    if (faseActual < 2) {
       setFaseActual(prev => prev + 1);
     } else {
       // Hemos completado las 3 fases del bioma!
@@ -143,17 +161,20 @@ function DynamicBiomeGame({ personajeId, capituloNum, onComplete, onBack }) {
   };
 
   const renderEngine = () => {
+    if (actividades.length === 0) {
+      return <div style={{width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>Cargando actividades...</div>;
+    }
     if (!validatedImage) {
       return <div style={{width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>Cargando motor mágico...</div>;
     }
 
     const props = {
-      nivel: actividadFase.dificultad,
+      nivel: actividadActual.nivel,
       onComplete: handleEngineComplete,
       imageSrc: validatedImage
     };
 
-    switch (actividadFase.motor) {
+    switch (actividadActual.motor) {
       case ENGINE_TYPES.LABERINTO: return <LaberintoJuego {...props} />;
       case ENGINE_TYPES.BUSQUEDA: return <BusquedaVisualJuego {...props} />;
       case ENGINE_TYPES.ROMPECABEZAS: return <RompecabezasEngine {...props} />;
@@ -163,6 +184,11 @@ function DynamicBiomeGame({ personajeId, capituloNum, onComplete, onBack }) {
       case ENGINE_TYPES.MEMORY: return <MemoryEngine {...props} />;
       case ENGINE_TYPES.REVEAL: return <RevealEngine {...props} />;
       case ENGINE_TYPES.COLOR: return <ColorEngine {...props} />;
+      case ENGINE_TYPES.TRAZO: return <TrazoEngine {...props} />;
+      case ENGINE_TYPES.ARRASTRE: return <ArrastreEngine {...props} />;
+      case ENGINE_TYPES.DELETREO: return <DeletreoEngine {...props} />;
+      case ENGINE_TYPES.QUIZ: return <QuizEngine {...props} />;
+      case ENGINE_TYPES.PAUSA_ACTIVA: return <PausaActivaEngine {...props} />;
       default: return <div>Motor no encontrado</div>;
     }
   };

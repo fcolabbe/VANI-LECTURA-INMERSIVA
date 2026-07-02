@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useActivities } from '../hooks/useActivities';
+import { MASTER_LIBRARY, ENGINE_TYPES } from '../data/actividadesData';
+
 import LaberintoJuego from '../components/juegos/LaberintoJuego';
 import BusquedaVisualJuego from '../components/juegos/BusquedaVisualJuego';
 import RompecabezasEngine from '../components/juegos/RompecabezasEngine';
@@ -9,35 +12,72 @@ import SombrasEngine from '../components/juegos/SombrasEngine';
 import MemoryEngine from '../components/juegos/MemoryEngine';
 import RevealEngine from '../components/juegos/RevealEngine';
 import ColorEngine from '../components/juegos/ColorEngine';
+import TrazoEngine from '../components/juegos/TrazoEngine';
+import ArrastreEngine from '../components/juegos/ArrastreEngine';
+import DeletreoEngine from '../components/juegos/DeletreoEngine';
+import QuizEngine from '../components/juegos/QuizEngine';
+import PausaActivaEngine from '../components/juegos/PausaActivaEngine';
+
+const PERSONAJES_META = {
+  leo: { nombre: 'Leo', color: '#b45309', bg: '#fef3c7', icon: '🦁' },
+  lulu: { nombre: 'Lulú', color: '#0369a1', bg: '#e0f2fe', icon: '🐳' },
+  koda: { nombre: 'Koda', color: '#4338ca', bg: '#e0e7ff', icon: '🐻' },
+  nia: { nombre: 'Nia', color: '#be123c', bg: '#ffe4e6', icon: '🦊' },
+  sora: { nombre: 'Sora', color: '#0f766e', bg: '#ccfbf1', icon: '🦅' },
+  bibi: { nombre: 'Bibi', color: '#6d28d9', bg: '#ede9fe', icon: '🐍' }
+};
 
 export default function HubActividades() {
   const navigate = useNavigate();
-  const [activeProto, setActiveProto] = useState(null); 
-  const [selectedNivel, setSelectedNivel] = useState(1);
+  const { state, isUnlocked, toggleDeveloperMode, getLibraryForCharacter } = useActivities();
+  
+  const [activePersonaje, setActivePersonaje] = useState(null);
+  const [activeEje, setActiveEje] = useState(null);
+  const [activeActivity, setActiveActivity] = useState(null);
+  const [activeNivelFilter, setActiveNivelFilter] = useState(null); // null = all, 1, 2, 3
 
   const handleComplete = (metricas) => {
-    console.log("Prototipo Completado. Métricas silenciosas capturadas:", metricas);
-    setTimeout(() => setActiveProto(null), 2500);
+    console.log("Actividad Completada. Métricas silenciosas capturadas:", metricas);
+    // Aqui podriamos guardar score pero dijimos cero feedback visual.
+    setTimeout(() => setActiveActivity(null), 1500);
   };
 
-  if (activeProto) {
+  const renderEngine = (act) => {
+    const props = {
+      nivel: act.nivel,
+      onComplete: handleComplete,
+      imageSrc: act.imagenAsset
+    };
+
+    switch (act.motor) {
+      case ENGINE_TYPES.LABERINTO: return <LaberintoJuego {...props} />;
+      case ENGINE_TYPES.BUSQUEDA: return <BusquedaVisualJuego {...props} />;
+      case ENGINE_TYPES.ROMPECABEZAS: return <RompecabezasEngine {...props} />;
+      case ENGINE_TYPES.DIFERENCIAS: return <DiferenciasEngine {...props} />;
+      case ENGINE_TYPES.SECUENCIAS: return <SecuenciasEngine {...props} />;
+      case ENGINE_TYPES.SOMBRAS: return <SombrasEngine {...props} />;
+      case ENGINE_TYPES.MEMORY: return <MemoryEngine {...props} />;
+      case ENGINE_TYPES.REVEAL: return <RevealEngine {...props} />;
+      case ENGINE_TYPES.COLOR: return <ColorEngine {...props} />;
+      case ENGINE_TYPES.TRAZO: return <TrazoEngine {...props} />;
+      case ENGINE_TYPES.ARRASTRE: return <ArrastreEngine {...props} />;
+      case ENGINE_TYPES.DELETREO: return <DeletreoEngine {...props} />;
+      case ENGINE_TYPES.QUIZ: return <QuizEngine {...props} />;
+      case ENGINE_TYPES.PAUSA_ACTIVA: return <PausaActivaEngine {...props} />;
+      default: return <div>Motor no encontrado</div>;
+    }
+  };
+
+  if (activeActivity) {
     return (
       <div style={{ width: '100vw', height: '100dvh', position: 'relative' }}>
         <button 
-          onClick={() => setActiveProto(null)}
+          onClick={() => setActiveActivity(null)}
           style={{ position: 'absolute', top: 20, right: 20, zIndex: 100, padding: '10px 20px', borderRadius: '15px', border: 'none', background: 'white', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', cursor: 'pointer', fontWeight: 'bold' }}
         >
-          Cerrar Prototipo
+          Cerrar Juego
         </button>
-        {activeProto === 'laberinto' && <LaberintoJuego nivel={selectedNivel} onComplete={handleComplete} />}
-        {activeProto === 'busqueda' && <BusquedaVisualJuego nivel={selectedNivel} onComplete={handleComplete} />}
-        {activeProto === 'rompecabezas' && <RompecabezasEngine nivel={selectedNivel} imageSrc="/personaje_cuento0.png" onComplete={handleComplete} />}
-        {activeProto === 'diferencias' && <DiferenciasEngine nivel={selectedNivel} imageSrc="/personaje_cuento0.png" onComplete={handleComplete} />}
-        {activeProto === 'secuencias' && <SecuenciasEngine nivel={selectedNivel} onComplete={handleComplete} />}
-        {activeProto === 'sombras' && <SombrasEngine nivel={selectedNivel} onComplete={handleComplete} />}
-        {activeProto === 'memory' && <MemoryEngine nivel={selectedNivel} onComplete={handleComplete} />}
-        {activeProto === 'reveal' && <RevealEngine nivel={selectedNivel} imageSrc="/personaje_cuento0.png" onComplete={handleComplete} />}
-        {activeProto === 'color' && <ColorEngine nivel={selectedNivel} imageSrc="/personaje_cuento0.png" onComplete={handleComplete} />}
+        {renderEngine(activeActivity)}
       </div>
     );
   }
@@ -47,131 +87,152 @@ export default function HubActividades() {
       height: '100dvh', backgroundColor: '#f7f3eb', padding: '2rem',
       fontFamily: 'system-ui, -apple-system, sans-serif', display: 'flex', flexDirection: 'column', overflow: 'hidden'
     }}>
-      <div style={{ flexShrink: 0 }}>
-        <button onClick={() => navigate('/')} style={{ border: 'none', background: 'transparent', fontSize: '1.5rem', cursor: 'pointer', marginBottom: '1rem' }}>← Volver</button>
-        <h1 style={{ color: '#334155', fontSize: '2.5rem', margin: '0 0 1rem 0' }}>Centro de Entrenamiento Vani</h1>
-        <p style={{ color: '#64748b', fontSize: '1.2rem', marginBottom: '2rem' }}>Elige qué habilidad quieres practicar hoy.</p>
+      {/* Header */}
+      <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <div>
+          <button 
+            onClick={() => {
+              if (activeNivelFilter) setActiveNivelFilter(null);
+              else if (activeEje) setActiveEje(null);
+              else if (activePersonaje) setActivePersonaje(null);
+              else navigate('/');
+            }} 
+            style={{ border: 'none', background: 'transparent', fontSize: '1.5rem', cursor: 'pointer', marginBottom: '0.5rem' }}
+          >
+            ← Volver
+          </button>
+          <h1 style={{ color: '#334155', fontSize: '2.5rem', margin: 0 }}>
+            {activePersonaje ? `Biblioteca de ${PERSONAJES_META[activePersonaje].nombre}` : 'Biblioteca Maestra VANI'}
+          </h1>
+          <p style={{ color: '#64748b', fontSize: '1.2rem', margin: '0.5rem 0 0 0' }}>
+            {activePersonaje ? 'Elige una categoría de entrenamiento.' : 'Selecciona un personaje para ver sus actividades.'}
+          </p>
+        </div>
+        
+        {/* Toggle Modo Desarrollador */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'white', padding: '10px 20px', borderRadius: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+          <span style={{ fontSize: '1.5rem' }}>🛠️</span>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', color: '#475569', fontWeight: 'bold' }}>
+            Modo Dev
+            <input type="checkbox" checked={state.developerMode} onChange={toggleDeveloperMode} style={{ width: '20px', height: '20px' }} />
+          </label>
+        </div>
       </div>
       
+      {/* Content Area */}
       <div className="hide-scrollbar" style={{ flex: 1, overflowY: 'auto', paddingBottom: '2rem' }}>
-        {/* Selector de Nivel de Dificultad para Prototipos */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem', padding: '1rem', background: 'white', borderRadius: '16px', width: 'fit-content', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
-          <span style={{ fontWeight: 'bold', color: '#475569' }}>Simular Dificultad:</span>
-          <button onClick={() => setSelectedNivel(1)} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: selectedNivel === 1 ? '#0D9488' : '#e2e8f0', color: selectedNivel === 1 ? 'white' : '#64748b', cursor: 'pointer' }}>Nivel 1 (Cap 1-5)</button>
-          <button onClick={() => setSelectedNivel(2)} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: selectedNivel === 2 ? '#0D9488' : '#e2e8f0', color: selectedNivel === 2 ? 'white' : '#64748b', cursor: 'pointer' }}>Nivel 2 (Cap 6-10)</button>
-          <button onClick={() => setSelectedNivel(3)} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: selectedNivel === 3 ? '#0D9488' : '#e2e8f0', color: selectedNivel === 3 ? 'white' : '#64748b', cursor: 'pointer' }}>Nivel 3 (Cap 11-14)</button>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
         
-        {/* Card 1: Puzzles Espaciales (Búsqueda Visual) */}
-        <div onClick={() => setActiveProto('busqueda')} style={{ background: 'white', padding: '2rem', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', cursor: 'pointer', transition: 'transform 0.2s', border: '2px dashed #0D9488' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>👀</div>
-            <span style={{ background: '#fef3c7', color: '#d97706', padding: '4px 8px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 'bold' }}>PROTOTIPO</span>
+        {/* NIVEL 1: Personajes */}
+        {!activePersonaje && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
+            {Object.entries(PERSONAJES_META).map(([id, meta]) => (
+              <div 
+                key={id} onClick={() => setActivePersonaje(id)}
+                style={{ 
+                  background: meta.bg, padding: '2rem', borderRadius: '24px', cursor: 'pointer', 
+                  transition: 'transform 0.2s', border: `3px solid ${meta.color}`,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 10px 30px rgba(0,0,0,0.05)'
+                }}
+              >
+                <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>{meta.icon}</div>
+                <h2 style={{ color: meta.color, margin: 0, fontSize: '2rem' }}>{meta.nombre}</h2>
+                <div style={{ marginTop: '1rem', background: 'white', padding: '5px 15px', borderRadius: '15px', color: meta.color, fontWeight: 'bold' }}>
+                  {MASTER_LIBRARY[id]?.length || 0} Actividades
+                </div>
+              </div>
+            ))}
           </div>
-          <h2 style={{ color: '#1e293b', marginBottom: '0.5rem' }}>Búsqueda Visual</h2>
-          <p style={{ color: '#64748b' }}>Encuentra los objetos camuflados. Mide barrido visual y concentración.</p>
-          <div style={{ marginTop: '1rem', color: '#38BDF8', fontWeight: 'bold' }}>Probar →</div>
-        </div>
+        )}
 
-        {/* Card 2: Rompecabezas Engine */}
-        <div onClick={() => setActiveProto('rompecabezas')} style={{ background: 'white', padding: '2rem', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', cursor: 'pointer', transition: 'transform 0.2s', border: '2px solid #8b5cf6' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🧩</div>
-            <span style={{ background: '#ede9fe', color: '#7c3aed', padding: '4px 8px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 'bold' }}>NUEVO MOTOR</span>
+        {/* NIVEL 2: Ejes Cognitivos */}
+        {activePersonaje && !activeEje && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+            {['ATENCION', 'MEMORIA', 'LECTURA'].map(eje => (
+              <div 
+                key={eje} onClick={() => setActiveEje(eje)}
+                style={{ 
+                  background: 'white', padding: '2rem', borderRadius: '24px', cursor: 'pointer', 
+                  transition: 'transform 0.2s', border: `2px solid #cbd5e1`,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 10px 30px rgba(0,0,0,0.05)'
+                }}
+              >
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>
+                  {eje === 'ATENCION' ? '🎯' : eje === 'MEMORIA' ? '🧩' : '📖'}
+                </div>
+                <h2 style={{ color: '#334155', margin: 0, fontSize: '1.5rem', textAlign: 'center' }}>
+                  {eje === 'ATENCION' ? 'Foco y Atención' : eje === 'MEMORIA' ? 'Lógica y Memoria' : 'Lectoescritura'}
+                </h2>
+              </div>
+            ))}
           </div>
-          <h2 style={{ color: '#1e293b', marginBottom: '0.5rem' }}>Rompecabezas</h2>
-          <p style={{ color: '#64748b' }}>Arma la imagen cortada del cuento. Mide arrastre espacial y percepción lógica.</p>
-          <div style={{ marginTop: '1rem', color: '#8b5cf6', fontWeight: 'bold' }}>Probar →</div>
-        </div>
+        )}
 
-        {/* Card 3: Busca Diferencias Engine */}
-        <div onClick={() => setActiveProto('diferencias')} style={{ background: 'white', padding: '2rem', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', cursor: 'pointer', transition: 'transform 0.2s', border: '2px solid #ec4899' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
-            <span style={{ background: '#fce7f3', color: '#db2777', padding: '4px 8px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 'bold' }}>NUEVO MOTOR</span>
+        {/* NIVEL 3: Grid de Actividades */}
+        {activePersonaje && activeEje && (
+          <div>
+            {/* Barra de Filtros de Dificultad */}
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', justifyContent: 'center' }}>
+              <button 
+                onClick={() => setActiveNivelFilter(null)}
+                style={{ padding: '10px 20px', borderRadius: '20px', border: 'none', background: activeNivelFilter === null ? PERSONAJES_META[activePersonaje].color : 'white', color: activeNivelFilter === null ? 'white' : '#64748b', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }}
+              >
+                Todos los Niveles
+              </button>
+              {[1, 2, 3].map(n => (
+                <button 
+                  key={n}
+                  onClick={() => setActiveNivelFilter(n)}
+                  style={{ padding: '10px 20px', borderRadius: '20px', border: 'none', background: activeNivelFilter === n ? PERSONAJES_META[activePersonaje].color : 'white', color: activeNivelFilter === n ? 'white' : '#64748b', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }}
+                >
+                  Nivel {n}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1.5rem' }}>
+              {getLibraryForCharacter(activePersonaje)
+                .filter(a => a.eje === activeEje && (activeNivelFilter === null || a.nivel === activeNivelFilter))
+                .map((act, idx) => {
+                const unlocked = act.isUnlocked;
+                const isAiLocked = act.aiLocked;
+
+                return (
+                  <div 
+                    key={act.id} 
+                    onClick={() => {
+                      if (unlocked) setActiveActivity(act);
+                    }}
+                    style={{ 
+                      background: 'white', borderRadius: '16px', overflow: 'hidden', cursor: unlocked ? 'pointer' : 'not-allowed',
+                      border: unlocked ? `2px solid ${PERSONAJES_META[activePersonaje].color}` : '2px solid #e2e8f0',
+                      boxShadow: '0 4px 10px rgba(0,0,0,0.05)', position: 'relative', opacity: unlocked ? 1 : 0.7
+                    }}
+                  >
+                    <div style={{ width: '100%', height: '120px', background: '#f8fafc', backgroundImage: `url(${act.imagenAsset})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: unlocked ? 'none' : 'grayscale(100%) blur(2px)' }} />
+                    
+                    {!unlocked && (
+                      <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -70%)', fontSize: '2rem', background: 'rgba(255,255,255,0.8)', borderRadius: '50%', padding: '10px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {isAiLocked ? '🌱' : '🔒'}
+                      </div>
+                    )}
+
+                    <div style={{ padding: '1rem', textAlign: 'center' }}>
+                      <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                        {act.motor}
+                      </div>
+                      <div style={{ fontSize: '1rem', color: '#334155', fontWeight: 'bold', marginTop: '4px' }}>
+                        Nivel {act.nivel}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          <h2 style={{ color: '#1e293b', marginBottom: '0.5rem' }}>Busca Diferencias</h2>
-          <p style={{ color: '#64748b' }}>Encuentra las variaciones entre dos imágenes. Mide percepción visual.</p>
-          <div style={{ marginTop: '1rem', color: '#ec4899', fontWeight: 'bold' }}>Probar →</div>
-        </div>
+        )}
 
-        {/* Card 4: Ordenar Secuencias Engine */}
-        <div onClick={() => setActiveProto('secuencias')} style={{ background: 'white', padding: '2rem', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', cursor: 'pointer', transition: 'transform 0.2s', border: '2px solid #a855f7' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⏱️</div>
-            <span style={{ background: '#f3e8ff', color: '#9333ea', padding: '4px 8px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 'bold' }}>NUEVO MOTOR</span>
-          </div>
-          <h2 style={{ color: '#1e293b', marginBottom: '0.5rem' }}>Ordenar Historia</h2>
-          <p style={{ color: '#64748b' }}>Ordena cronológicamente los eventos. Mide comprensión temporal.</p>
-          <div style={{ marginTop: '1rem', color: '#a855f7', fontWeight: 'bold' }}>Probar →</div>
-        </div>
-
-        {/* Card 5: Sombras Mágicas Engine */}
-        <div onClick={() => setActiveProto('sombras')} style={{ background: 'white', padding: '2rem', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', cursor: 'pointer', transition: 'transform 0.2s', border: '2px solid #f97316' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>👥</div>
-            <span style={{ background: '#ffedd5', color: '#ea580c', padding: '4px 8px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 'bold' }}>NUEVO MOTOR</span>
-          </div>
-          <h2 style={{ color: '#1e293b', marginBottom: '0.5rem' }}>Sombras Mágicas</h2>
-          <p style={{ color: '#64748b' }}>Arrastra el objeto a su silueta. Mide discriminación de formas.</p>
-          <div style={{ marginTop: '1rem', color: '#f97316', fontWeight: 'bold' }}>Probar →</div>
-        </div>
-
-        {/* Card 6: Asociación Abierta Engine */}
-        <div onClick={() => setActiveProto('memory')} style={{ background: 'white', padding: '2rem', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', cursor: 'pointer', transition: 'transform 0.2s', border: '2px solid #0284c7' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🧠</div>
-            <span style={{ background: '#e0f2fe', color: '#0284c7', padding: '4px 8px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 'bold' }}>NUEVO MOTOR</span>
-          </div>
-          <h2 style={{ color: '#1e293b', marginBottom: '0.5rem' }}>Asociación Abierta</h2>
-          <p style={{ color: '#64748b' }}>Empareja conceptos a la vista sin fricción de memoria ciega.</p>
-          <div style={{ marginTop: '1rem', color: '#0284c7', fontWeight: 'bold' }}>Probar →</div>
-        </div>
-
-        {/* Card 7: Descubrimiento Engine */}
-        <div onClick={() => setActiveProto('reveal')} style={{ background: 'white', padding: '2rem', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', cursor: 'pointer', transition: 'transform 0.2s', border: '2px solid #475569' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✨</div>
-            <span style={{ background: '#f1f5f9', color: '#475569', padding: '4px 8px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 'bold' }}>NUEVO MOTOR</span>
-          </div>
-          <h2 style={{ color: '#1e293b', marginBottom: '0.5rem' }}>Limpiar y Descubrir</h2>
-          <p style={{ color: '#64748b' }}>Raspa la pantalla (barrido visual continuo) para revelar la imagen oculta.</p>
-          <div style={{ marginTop: '1rem', color: '#475569', fontWeight: 'bold' }}>Probar →</div>
-        </div>
-
-        {/* Card 8: Coloreado Mágico Engine */}
-        <div onClick={() => setActiveProto('color')} style={{ background: 'white', padding: '2rem', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', cursor: 'pointer', transition: 'transform 0.2s', border: '2px solid #db2777' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎨</div>
-            <span style={{ background: '#fce7f3', color: '#db2777', padding: '4px 8px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 'bold' }}>NUEVO MOTOR</span>
-          </div>
-          <h2 style={{ color: '#1e293b', marginBottom: '0.5rem' }}>Coloreado Mágico</h2>
-          <p style={{ color: '#64748b' }}>Toca las zonas grises para expandir explosiones de color mágicas.</p>
-          <div style={{ marginTop: '1rem', color: '#db2777', fontWeight: 'bold' }}>Probar →</div>
-        </div>
-
-        {/* Card 9: Trazo y Motricidad (Laberinto) */}
-        <div onClick={() => setActiveProto('laberinto')} style={{ background: 'white', padding: '2rem', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', cursor: 'pointer', transition: 'transform 0.2s', border: '2px dashed #0D9488' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎨</div>
-            <span style={{ background: '#fef3c7', color: '#d97706', padding: '4px 8px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 'bold' }}>PROTOTIPO</span>
-          </div>
-          <h2 style={{ color: '#1e293b', marginBottom: '0.5rem' }}>Laberinto de Trazo</h2>
-          <p style={{ color: '#64748b' }}>Traza la línea. Mide lateralidad, consistencia del trazo y precisión.</p>
-          <div style={{ marginTop: '1rem', color: '#0D9488', fontWeight: 'bold' }}>Probar →</div>
-        </div>
-
-        {/* Card 3: Quiz de Comprensión */}
-        <div style={{ background: 'white', padding: '2rem', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', cursor: 'pointer' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🤔</div>
-          <h2 style={{ color: '#1e293b', marginBottom: '0.5rem' }}>Preguntas Curiosas</h2>
-          <p style={{ color: '#64748b' }}>Demuestra lo que aprendiste respondiendo preguntas sobre las historias.</p>
-          <div style={{ marginTop: '1rem', color: '#D97706', fontWeight: 'bold' }}>Jugar →</div>
-        </div>
-
-      </div>
       </div>
       <style>{`
         .hide-scrollbar::-webkit-scrollbar { display: none; }

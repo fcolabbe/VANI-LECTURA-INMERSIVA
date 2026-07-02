@@ -50,6 +50,43 @@ const GENERATE_LEVELS = (width, height) => ({
       emoji: ["💧", "💠", "🐟", "🧊", "🫐"][Math.floor(Math.random() * 5)]
     })),
     bg: '#eff6ff'
+  },
+  4: { // Preescritura: Búsqueda de Letras
+    instruccion: "¡Encuentra todas las letras 'A' escondidas!",
+    targetEmoji: "A",
+    distractorEmojis: ["E", "O", "V", "M"],
+    targets: [
+      { id: 't1', x: width * 0.3, y: height * 0.3, size: 60, found: false, isText: true },
+      { id: 't2', x: width * 0.7, y: height * 0.7, size: 60, found: false, isText: true },
+      { id: 't3', x: width * 0.8, y: height * 0.2, size: 60, found: false, isText: true }
+    ],
+    distractors: Array.from({ length: 20 }).map((_, i) => ({
+      id: `d${i}`,
+      x: width * (0.1 + Math.random() * 0.8),
+      y: height * (0.1 + Math.random() * 0.8),
+      size: 40 + Math.random() * 20,
+      emoji: ["E", "O", "V", "M"][Math.floor(Math.random() * 4)],
+      isText: true
+    })),
+    bg: '#fdf4ff'
+  },
+  5: { // Identificación Sonido-Grafema
+    instruccion: "¡Escucha con atención y toca la letra que suena! (M)",
+    targetEmoji: "M",
+    audioHint: "M", // Esto activaría síntesis de voz en el componente
+    distractorEmojis: ["N", "P", "S", "T"],
+    targets: [
+      { id: 't1', x: width * 0.5, y: height * 0.5, size: 80, found: false, isText: true }
+    ],
+    distractors: Array.from({ length: 10 }).map((_, i) => ({
+      id: `d${i}`,
+      x: width * (0.1 + Math.random() * 0.8),
+      y: height * (0.1 + Math.random() * 0.8),
+      size: 60 + Math.random() * 20,
+      emoji: ["N", "P", "S", "T"][Math.floor(Math.random() * 4)],
+      isText: true
+    })),
+    bg: '#fffbeb'
   }
 });
 
@@ -75,11 +112,20 @@ export default function BusquedaVisualJuego({ nivel = 1, onComplete }) {
     if (containerRef.current) {
       const { clientWidth, clientHeight } = containerRef.current;
       const levels = GENERATE_LEVELS(clientWidth, clientHeight);
-      setLevelData(levels[nivel] || levels[1]);
+      const data = levels[nivel] || levels[1];
+      setLevelData(data);
       metrics.current.startTime = Date.now();
       metrics.current.missClicks = 0;
       metrics.current.findTimes = [];
       setIsDone(false);
+
+      if (data.audioHint && 'speechSynthesis' in window) {
+        // Reproducir el sonido/letra
+        const utterance = new SpeechSynthesisUtterance(data.audioHint);
+        utterance.lang = 'es-ES';
+        utterance.rate = 0.8; // Más lento para mejor comprensión
+        window.speechSynthesis.speak(utterance);
+      }
     }
   };
 
@@ -148,6 +194,26 @@ export default function BusquedaVisualJuego({ nivel = 1, onComplete }) {
           <h3 style={{ margin: 0, color: '#334155', fontSize: '1rem', fontWeight: 'bold' }}>Vani</h3>
           <p style={{ margin: 0, color: '#64748b', fontSize: '1.1rem', lineHeight: '1.3' }}>
             {levelData.instruccion}
+            {levelData.audioHint && (
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if ('speechSynthesis' in window) {
+                    const utterance = new SpeechSynthesisUtterance(levelData.audioHint);
+                    utterance.lang = 'es-ES';
+                    utterance.rate = 0.8;
+                    window.speechSynthesis.speak(utterance);
+                  }
+                }}
+                style={{
+                  marginLeft: '10px', padding: '5px 10px', background: '#fde047', 
+                  border: 'none', borderRadius: '15px', cursor: 'pointer',
+                  fontWeight: 'bold', color: '#b45309'
+                }}
+              >
+                🔊 Repetir Sonido
+              </button>
+            )}
           </p>
           <div style={{ marginTop: '5px', fontWeight: 'bold', color: '#10b981', fontSize: '0.9rem' }}>
             Encontrados: {levelData.targets.filter(t => t.found).length} / {levelData.targets.length}

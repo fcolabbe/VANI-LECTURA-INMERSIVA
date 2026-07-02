@@ -12,15 +12,25 @@ export default function SecuenciasEngine({
   // Nivel 2: 4 viñetas
   // Nivel 3: 5 viñetas o detalles sutiles
   const getSequenceData = (l) => {
-    // Por ahora usamos emojis y colores como viñetas para el prototipo
     let numItems = 3;
     if (l === 2) numItems = 4;
     if (l >= 3) numItems = 5;
 
-    const sequence = [];
-    const emojis = ["🌱", "🌿", "🪴", "🌳", "🍎"];
-    const colors = ["#fef3c7", "#dcfce7", "#bbf7d0", "#86efac", "#4ade80"];
+    let emojis = ["🌱", "🌿", "🪴", "🌳", "🍎"];
+    let colors = ["#fef3c7", "#dcfce7", "#bbf7d0", "#86efac", "#4ade80"];
+    let audioSequence = null;
+    let instruction = "Ordena la historia (arrastra al hueco correcto)";
 
+    if (l === 4) {
+      // Memoria Secuencial Auditiva
+      emojis = ["🐶", "🐱", "🐭", "🐰", "🦊"];
+      colors = ["#ffe4e6", "#fce7f3", "#fbcfe8", "#f9a8d4", "#f472b6"];
+      audioSequence = "Perro, Gato, Ratón, Conejo, Zorro";
+      instruction = "Escucha el orden de los animales y acomódalos";
+      numItems = 5;
+    }
+
+    const sequence = [];
     for (let i = 0; i < numItems; i++) {
       sequence.push({
         id: `seq_${i}`,
@@ -29,8 +39,10 @@ export default function SecuenciasEngine({
         color: colors[i]
       });
     }
-    return sequence;
+    return { sequence, audioSequence, instruction };
   };
+
+  const [levelConfig, setLevelConfig] = useState({ instruction: "", audioSequence: null });
 
   const [items, setItems] = useState([]);
   const [slots, setSlots] = useState([]); // Los huecos en la línea de tiempo
@@ -57,7 +69,18 @@ export default function SecuenciasEngine({
     if (!containerRef.current) return;
     const { clientWidth, clientHeight } = containerRef.current;
     
-    const sequenceData = getSequenceData(nivel);
+    const { sequence: sequenceData, audioSequence, instruction } = getSequenceData(nivel);
+    setLevelConfig({ instruction, audioSequence });
+    
+    // Play audio sequence if exists
+    if (audioSequence && 'speechSynthesis' in window) {
+      setTimeout(() => {
+        const utterance = new SpeechSynthesisUtterance(audioSequence);
+        utterance.lang = 'es-ES';
+        utterance.rate = 0.7; // Lento para que escuchen el orden
+        window.speechSynthesis.speak(utterance);
+      }, 500);
+    }
     
     // Configurar slots (Huecos) centrados horizontalmente
     const slotWidth = Math.min(150, (clientWidth * 0.8) / sequenceData.length);
@@ -195,9 +218,30 @@ export default function SecuenciasEngine({
     >
       <div style={{
         position: 'absolute', top: 20, width: '100%', textAlign: 'center',
-        zIndex: 10, color: '#6b21a8', fontWeight: 'bold', fontSize: '1.2rem'
+        zIndex: 10, color: '#6b21a8', fontWeight: 'bold', fontSize: '1.2rem',
+        display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px'
       }}>
-        Ordena la historia (arrastra al hueco correcto)
+        {levelConfig.instruction}
+        {levelConfig.audioSequence && (
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(levelConfig.audioSequence);
+                utterance.lang = 'es-ES';
+                utterance.rate = 0.7;
+                window.speechSynthesis.speak(utterance);
+              }
+            }}
+            style={{
+              padding: '5px 10px', background: '#d8b4fe', 
+              border: 'none', borderRadius: '15px', cursor: 'pointer',
+              fontWeight: 'bold', color: '#4c1d95'
+            }}
+          >
+            🔊 Repetir
+          </button>
+        )}
       </div>
 
       {/* Render Slots */}

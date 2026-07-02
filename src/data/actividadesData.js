@@ -1,99 +1,100 @@
-// Base de Datos Programática de Actividades VANI
-// Genera ~252 actividades (6 personajes x 14 capítulos x 3 fases) con curva de dificultad dinámica (1 al 6)
+// Base de Datos Programática de Actividades VANI - V2 (Master Library)
+// Genera más de 100 actividades dinámicas por personaje cruzando motores, niveles y 45 assets.
 
 const PERSONAJES = ['leo', 'lulu', 'koda', 'nia', 'sora', 'bibi'];
-const CAPITULOS = 14;
+const CAPITULOS = 15; // Capítulos del 0 al 14
 
-// Tipos de motores disponibles
 export const ENGINE_TYPES = {
+  // Foco y Atención
   LABERINTO: 'laberinto',
-  BUSQUEDA: 'busqueda',
-  ROMPECABEZAS: 'rompecabezas',
   DIFERENCIAS: 'diferencias',
+  BUSQUEDA: 'busqueda',
+  PAUSA_ACTIVA: 'pausa_activa',
+  REVEAL: 'reveal',
+  COLOR: 'color',
+  // Lógica y Memoria
   SECUENCIAS: 'secuencias',
   SOMBRAS: 'sombras',
+  ROMPECABEZAS: 'rompecabezas',
   MEMORY: 'memory',
-  REVEAL: 'reveal',
-  COLOR: 'color'
+  // Lectoescritura
+  TRAZO: 'trazo',
+  ARRASTRE: 'arrastre',
+  DELETREO: 'deletreo',
+  QUIZ: 'quiz'
 };
 
-// Mapeo temático de motores preferidos por personaje para dar variedad
-const PREFERRED_ENGINES = {
-  leo: [ENGINE_TYPES.LABERINTO, ENGINE_TYPES.ROMPECABEZAS, ENGINE_TYPES.SOMBRAS, ENGINE_TYPES.COLOR], // Tierra (Trazos, formas)
-  lulu: [ENGINE_TYPES.BUSQUEDA, ENGINE_TYPES.DIFERENCIAS, ENGINE_TYPES.LABERINTO, ENGINE_TYPES.REVEAL], // Agua (Flotar, buscar)
-  koda: [ENGINE_TYPES.SECUENCIAS, ENGINE_TYPES.SOMBRAS, ENGINE_TYPES.ROMPECABEZAS, ENGINE_TYPES.MEMORY], // Nieve (Huellas, lógica)
-  nia: [ENGINE_TYPES.ROMPECABEZAS, ENGINE_TYPES.COLOR, ENGINE_TYPES.SECUENCIAS], // Fuego (Energía, armar)
-  sora: [ENGINE_TYPES.REVEAL, ENGINE_TYPES.SOMBRAS, ENGINE_TYPES.BUSQUEDA], // Aire (Perspectiva, descubrir)
-  bibi: [ENGINE_TYPES.MEMORY, ENGINE_TYPES.SECUENCIAS, ENGINE_TYPES.ROMPECABEZAS] // Cristal (Reflejos, orden)
+const EJES = {
+  ATENCION: [ENGINE_TYPES.LABERINTO, ENGINE_TYPES.DIFERENCIAS, ENGINE_TYPES.BUSQUEDA, ENGINE_TYPES.PAUSA_ACTIVA, ENGINE_TYPES.REVEAL, ENGINE_TYPES.COLOR],
+  MEMORIA: [ENGINE_TYPES.SECUENCIAS, ENGINE_TYPES.SOMBRAS, ENGINE_TYPES.ROMPECABEZAS, ENGINE_TYPES.MEMORY],
+  LECTURA: [ENGINE_TYPES.TRAZO, ENGINE_TYPES.ARRASTRE, ENGINE_TYPES.DELETREO, ENGINE_TYPES.QUIZ]
 };
 
-/**
- * Calcula la dificultad cognitiva (1 al 6) basada en el progreso del niño (capítulo actual).
- * Cap 1-2: Nivel 1 (Intro)
- * Cap 3-5: Nivel 2 (Desarrollo Temprano)
- * Cap 6-8: Nivel 3 (Consolidación)
- * Cap 9-11: Nivel 4 (Desafío Medio)
- * Cap 12-13: Nivel 5 (Desafío Alto)
- * Cap 14: Nivel 6 (Maestría)
- */
-const calcularDificultad = (capitulo) => {
-  if (capitulo <= 2) return 1;
-  if (capitulo <= 5) return 2;
-  if (capitulo <= 8) return 3;
-  if (capitulo <= 11) return 4;
-  if (capitulo <= 13) return 5;
-  return 6;
+const PROPS_POR_PERSONAJE = {
+  leo: ['lámpara_antigua', 'mochila_explorador', 'lupa_dorada'],
+  lulu: ['nube_brillante', 'ostra_perla', 'gema_marina'],
+  koda: ['pez_colores', 'red_pesca', 'bote_madera'],
+  nia: ['hoja_cristalina', 'rama_magica', 'flor_luminosa'],
+  sora: ['pluma_viento', 'nido_alto', 'brisa_suave'],
+  bibi: ['flor_desierto', 'roca_caliente', 'sol_brillante']
 };
 
-// Generador de Actividades
-const generarActividades = () => {
-  const db = {};
+const getAssetForIndex = (personaje, index) => {
+  // Rotamos entre cuento0 a cuento14, e img 1 a 3. Por ahora mock con personaje_cuentoX.png
+  // Cuando estén todas las imgs: `/${personaje}_cap${Math.floor((index%45)/3)}_img${(index%3)+1}.png`
+  const imgNum = (index % 3); 
+  return `/${personaje}_cuento${imgNum}.png`; 
+};
+
+const generarMasterLibrary = () => {
+  const library = {};
 
   PERSONAJES.forEach(personaje => {
-    db[personaje] = {};
-    const motores = PREFERRED_ENGINES[personaje];
+    library[personaje] = [];
+    let actIndex = 0;
+    
+    const propsDisponibles = PROPS_POR_PERSONAJE[personaje] || ['objeto_mágico'];
 
-    for (let cap = 1; cap <= CAPITULOS; cap++) {
-      const dificultadBase = calcularDificultad(cap);
-      
-      // Cada capítulo tiene 3 actividades (Fase 1, Fase 2, Fase 3)
-      db[personaje][`capitulo_${cap}`] = {
-        fase1: {
-          id: `${personaje}_c${cap}_f1`,
-          motor: motores[0],
-          dificultad: dificultadBase,
-          imagenAsset: `/${personaje}_cuento1.png`, // Imagen provisional del Cuento 0
-          metadata: { descripcion: "Desarrollo motriz y percepción inicial" }
-        },
-        fase2: {
-          id: `${personaje}_c${cap}_f2`,
-          motor: motores[1],
-          dificultad: dificultadBase,
-          imagenAsset: `/${personaje}_cuento2.png`, // Imagen provisional del Cuento 0
-          metadata: { descripcion: "Desafío cognitivo intermedio" }
-        },
-        fase3: {
-          id: `${personaje}_c${cap}_f3`,
-          motor: motores[2],
-          dificultad: Math.min(6, dificultadBase + (cap % 2 === 0 ? 1 : 0)), 
-          imagenAsset: `/${personaje}_cuento3.png`, // Imagen provisional del Cuento 0
-          metadata: { descripcion: "Cierre e integración" }
+    // Generamos actividades para cada eje, iterando por motores y 3 niveles de dificultad.
+    Object.entries(EJES).forEach(([ejeName, motores]) => {
+      motores.forEach(motor => {
+        // Cada motor tendrá múltiples variaciones (Nivel 1, 2, 3) repetidas unas cuantas veces para volumen.
+        for (let nivel = 1; nivel <= 3; nivel++) {
+          // 3 instancias de cada (motor x nivel) = 3 * 3 * 14 = 126 actividades por pj
+          for (let rep = 1; rep <= 3; rep++) {
+            actIndex++;
+            
+            // Asignar prop contextual (rotativo)
+            const propAsignado = propsDisponibles[actIndex % propsDisponibles.length];
+            
+            library[personaje].push({
+              id: `${personaje}_${motor}_n${nivel}_r${rep}`,
+              eje: ejeName,
+              motor: motor,
+              nivel: nivel,
+              imagenAsset: getAssetForIndex(personaje, actIndex),
+              contextAssets: {
+                propPrincipal: `${personaje}_${propAsignado}`
+              },
+              isUnlocked: false // Por defecto bloqueada (se manejará en estado/telemetría)
+            });
+          }
         }
-      };
-    }
+      });
+    });
   });
 
-  return db;
+  return library;
 };
 
-export const actividadesData = generarActividades();
+export const MASTER_LIBRARY = generarMasterLibrary();
 
-// Helper function para consultar una actividad específica
-export const getActividad = (personaje, capitulo, fase) => {
-  try {
-    return actividadesData[personaje][`capitulo_${capitulo}`][`fase${fase}`];
-  } catch (e) {
-    console.error(`Actividad no encontrada: ${personaje} Cap${capitulo} Fase${fase}`);
-    return null;
-  }
+// Obtiene todas las actividades de un eje para un personaje
+export const getActividadesPorEje = (personaje, ejeName) => {
+  return MASTER_LIBRARY[personaje]?.filter(a => a.eje === ejeName) || [];
+};
+
+// Obtiene una actividad específica
+export const getActividad = (personaje, id) => {
+  return MASTER_LIBRARY[personaje]?.find(a => a.id === id) || null;
 };
