@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { vaniData } from '../data/vaniData';
 import VaniGuide from '../components/VaniGuide';
+import BackButton from '../components/BackButton';
 import { db } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { useResponsive } from '../hooks/useResponsive';
@@ -410,21 +411,12 @@ export default function Capitulo() {
     }}>
       {/* Botón Volver (Siempre accesible salvo si está cargando o en el test) */}
       {!['TEST_PREPARACION', 'TEST_CUENTA_REGRESIVA', 'TEST_LEYENDO', 'TEST_RESULTADOS'].includes(estado) && (
-        <button 
+        <BackButton
           onClick={() => {
             if (synth) synth.cancel();
             navigate(`/personaje/${personajeId}`);
           }}
-          style={{
-            position: 'absolute', top: '20px', left: '20px', width: '64px', height: '64px',
-            borderRadius: '50%', background: 'rgba(255,255,255,0.8)', border: 'none', color: '#64748b', 
-            fontSize: '1.2rem', cursor: 'pointer', zIndex: 1010,
-            boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}
-        >
-          ←
-        </button>
+        />
       )}
 
       {estado === 'INTRO' && (
@@ -523,21 +515,25 @@ export default function Capitulo() {
             )}
           </div>
 
-          {/* Área de Texto (Scrollable) */}
+          {/* Área de Texto: zona scrolleable + botonera siempre visible */}
           <div style={{
-            flex: isTabletLandscape ? '0 0 35%' : 1, padding: '2rem', position: 'relative',
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-            overflowY: 'auto', WebkitOverflowScrolling: 'touch',
+            flex: isTabletLandscape ? '0 0 35%' : 1, position: 'relative', minHeight: 0,
+            display: 'flex', flexDirection: 'column',
             backgroundColor: '#fcfcfc'
           }}>
-            <div 
+          <div className="hide-scrollbar" style={{
+            flex: 1, minHeight: 0, padding: '1.5rem 1.5rem 0.5rem 1.5rem',
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            overflowY: 'auto', WebkitOverflowScrolling: 'touch'
+          }}>
+            <div
               style={{
                 maxWidth: '700px', width: '100%', position: 'relative'
               }}
             >
               {/* Texto Fragmentado para Karaoke (Cero Fricción: Visible 100% sin blur ni opacidad reducida) */}
               <div style={{
-                fontSize: '1.6rem', lineHeight: '2', color: '#334155',
+                fontSize: 'clamp(1.15rem, 4.2vw, 1.6rem)', lineHeight: '1.9', color: '#334155',
                 margin: 0, textAlign: 'left'
               }}>
                 {parsedWords.map((wordObj, index) => {
@@ -635,11 +631,27 @@ export default function Capitulo() {
               </div>
             </div>
 
-            {/* Botonera de Acción */}
+          </div>
+
+            {/* Botonera de Acción: fija al fondo de la columna, siempre visible sin scroll */}
             <div style={{
-              marginTop: '2rem', display: 'flex', gap: '1.5rem', width: '100%', maxWidth: '400px',
-              justifyContent: 'center', alignItems: 'center',
-              paddingBottom: '2rem'
+              flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center',
+              padding: '0.5rem 1.5rem calc(0.75rem + env(safe-area-inset-bottom)) 1.5rem',
+              background: 'linear-gradient(to top, #fcfcfc 75%, rgba(252,252,252,0))'
+            }}>
+            {/* Indicador de escena */}
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '0.6rem' }}>
+              {escenas.map((_, i) => (
+                <div key={i} style={{
+                  width: i === escenaIndex ? '18px' : '7px', height: '7px', borderRadius: '4px',
+                  backgroundColor: i === escenaIndex ? (personaje?.color || '#0D9488') : '#e2e8f0',
+                  transition: 'all 0.3s ease'
+                }} />
+              ))}
+            </div>
+            <div style={{
+              display: 'flex', gap: '1.5rem', width: '100%', maxWidth: '400px',
+              justifyContent: 'center', alignItems: 'center'
             }}>
               {/* Botón Audio (TTS) */}
               <button 
@@ -686,6 +698,7 @@ export default function Capitulo() {
                 </div>
               )}
             </div>
+            </div>
           </div>
         </div>
       )}
@@ -717,7 +730,7 @@ export default function Capitulo() {
             marginTop: '80px',
             animation: 'fadeIn 0.5s ease' 
           }}>
-            <h2 style={{ color: '#78350f', marginBottom: '2rem', fontSize: '2rem', fontWeight: 'bold' }}>¡Has completado la lectura!</h2>
+            <h2 style={{ color: '#78350f', marginBottom: '2rem', fontSize: 'clamp(1.5rem, 5vw, 2rem)', fontWeight: 'bold' }}>¡Has completado la lectura!</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
               <button 
                 onClick={() => navigate(`/juego/${personajeId}`)}
@@ -787,22 +800,14 @@ export default function Capitulo() {
           height: '100dvh',
           width: '100vw'
         }}>
-          {/* Botón Volver al Menú de Opciones (Bifurcación) - Área táctil 64x64px */}
-          <button 
+          {/* Botón Volver al Menú de Opciones (Bifurcación) */}
+          <BackButton
             onClick={() => setEstado('BIFURCACION')}
-            style={{
-              position: 'absolute', top: '20px', left: '20px', width: '64px', height: '64px',
-              borderRadius: '50%', background: 'white', border: '1px solid rgba(0,0,0,0.06)', color: '#4a4a4a', 
-              fontSize: '1.2rem', cursor: 'pointer', zIndex: 10,
-              boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}
-          >
-            ←
-          </button>
+            style={{ background: 'white', border: '1px solid rgba(0,0,0,0.06)', color: '#4a4a4a', zIndex: 10, boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}
+          />
           
           <div style={{ textAlign: 'center', maxWidth: '500px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <h1 style={{ color: '#2a241c', fontSize: '2.5rem', marginBottom: '1.5rem', fontWeight: 'bold' }}>
+            <h1 style={{ color: '#2a241c', fontSize: 'clamp(1.7rem, 6vw, 2.5rem)', marginBottom: '1.5rem', fontWeight: 'bold' }}>
               Reto de Velocidad Lectora
             </h1>
             <p style={{ color: '#64748b', fontSize: '1.3rem', marginBottom: '3rem', lineHeight: '1.6' }}>
@@ -856,13 +861,13 @@ export default function Capitulo() {
         }}>
           <div style={{ maxWidth: '800px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '60px', paddingBottom: '40px' }}>
             <div style={{
-              backgroundColor: 'white', padding: '3rem', borderRadius: '24px',
+              backgroundColor: 'white', padding: 'clamp(1.25rem, 5vw, 3rem)', borderRadius: '24px',
               border: '1px solid rgba(0, 0, 0, 0.05)',
               boxShadow: '0 10px 30px rgba(0,0,0,0.03)', marginBottom: '3rem', width: '100%'
             }}>
-              <p style={{ 
-                fontSize: '1.8rem', lineHeight: '2', color: '#2a241c', 
-                margin: 0, textAlign: 'left', fontWeight: '500' 
+              <p style={{
+                fontSize: 'clamp(1.25rem, 4.5vw, 1.8rem)', lineHeight: '1.9', color: '#2a241c',
+                margin: 0, textAlign: 'left', fontWeight: '500'
               }}>
                 {textoCompletoTest}
               </p>
@@ -898,7 +903,7 @@ export default function Capitulo() {
         }}>
           <div style={{ textAlign: 'center', maxWidth: '500px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎉</div>
-            <h1 style={{ color: '#2a241c', fontSize: '2.5rem', marginBottom: '1.5rem', fontWeight: 'bold' }}>¡Excelente trabajo!</h1>
+            <h1 style={{ color: '#2a241c', fontSize: 'clamp(1.7rem, 6vw, 2.5rem)', marginBottom: '1.5rem', fontWeight: 'bold' }}>¡Excelente trabajo!</h1>
             
             <div style={{ 
               backgroundColor: 'white', padding: '2rem', borderRadius: '20px', 
@@ -987,6 +992,8 @@ export default function Capitulo() {
           animation: fallLeaves 4s linear infinite;
           animation-delay: 1.5s;
         }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
     </div>
   );

@@ -70,7 +70,7 @@ export default function CanvasBibi({ onComplete, onBack }) {
           else navigate('/personaje/bibi');
         }}
         style={{
-          position: 'absolute', top: '20px', left: '20px', width: '64px', height: '64px',
+          position: 'absolute', top: 'calc(20px + env(safe-area-inset-top))', left: '20px', width: '64px', height: '64px',
           borderRadius: '50%', background: 'rgba(255,255,255,0.25)', backdropFilter: 'blur(5px)', border: '1px solid rgba(255,255,255,0.4)', color: '#E0F2FE', 
           fontSize: '1.2rem', cursor: 'pointer', zIndex: 10,
           boxShadow: 'none',

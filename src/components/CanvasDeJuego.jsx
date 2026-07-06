@@ -198,7 +198,7 @@ function DynamicBiomeGame({ personajeId, capituloNum, onComplete, onBack }) {
       <button 
         onClick={onBack}
         style={{
-          position: 'absolute', top: '20px', left: '20px', width: '64px', height: '64px',
+          position: 'absolute', top: 'calc(20px + env(safe-area-inset-top))', left: '20px', width: '64px', height: '64px',
           borderRadius: '50%', background: 'white', border: 'none', color: '#64748b', 
           fontSize: '1.2rem', cursor: 'pointer', zIndex: 100,
           boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
@@ -209,7 +209,7 @@ function DynamicBiomeGame({ personajeId, capituloNum, onComplete, onBack }) {
       </button>
       
       {/* Progreso Visual de Fases */}
-      <div style={{ position: 'absolute', top: 20, right: 20, zIndex: 100, display: 'flex', gap: '8px' }}>
+      <div style={{ position: 'absolute', top: 'calc(20px + env(safe-area-inset-top))', right: 20, zIndex: 100, display: 'flex', gap: '8px' }}>
         {[1, 2, 3].map(f => (
           <div key={f} style={{
             width: '16px', height: '16px', borderRadius: '50%',
@@ -236,7 +236,7 @@ function HubSelection({ personaje, completed, onSelect, onBack }) {
       <button 
         onClick={onBack}
         style={{
-          position: 'absolute', top: '20px', left: '20px', width: '64px', height: '64px',
+          position: 'absolute', top: 'calc(20px + env(safe-area-inset-top))', left: '20px', width: '64px', height: '64px',
           borderRadius: '50%', background: 'white', border: 'none', color: '#64748b', 
           fontSize: '1.2rem', cursor: 'pointer', zIndex: 10,
           boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
@@ -401,7 +401,7 @@ function QuizView({ quizList, onComplete, onBack }) {
       <button 
         onClick={onBack}
         style={{
-          position: 'absolute', top: '20px', left: '20px', width: '64px', height: '64px',
+          position: 'absolute', top: 'calc(20px + env(safe-area-inset-top))', left: '20px', width: '64px', height: '64px',
           borderRadius: '50%', background: 'white', border: 'none', color: '#64748b', 
           fontSize: '1.2rem', cursor: 'pointer', zIndex: 10,
           boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
@@ -571,7 +571,7 @@ function SpellingView({ palabras, onComplete, onBack }) {
       <button 
         onClick={onBack}
         style={{
-          position: 'absolute', top: '20px', left: '20px', width: '64px', height: '64px',
+          position: 'absolute', top: 'calc(20px + env(safe-area-inset-top))', left: '20px', width: '64px', height: '64px',
           borderRadius: '50%', background: 'white', border: 'none', color: '#64748b', 
           fontSize: '1.2rem', cursor: 'pointer', zIndex: 10,
           boxShadow: '0 2px 10px rgba(0,0,0,0.1)',

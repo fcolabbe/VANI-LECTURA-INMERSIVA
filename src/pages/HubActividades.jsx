@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import BottomNav from '../components/BottomNav';
 import { useActivities } from '../hooks/useActivities';
 import { MASTER_LIBRARY, ENGINE_TYPES } from '../data/actividadesData';
 
@@ -71,9 +72,9 @@ export default function HubActividades() {
   if (activeActivity) {
     return (
       <div style={{ width: '100vw', height: '100dvh', position: 'relative' }}>
-        <button 
+        <button
           onClick={() => setActiveActivity(null)}
-          style={{ position: 'absolute', top: 20, right: 20, zIndex: 100, padding: '10px 20px', borderRadius: '15px', border: 'none', background: 'white', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', cursor: 'pointer', fontWeight: 'bold' }}
+          style={{ position: 'absolute', top: 'calc(20px + env(safe-area-inset-top))', right: 20, zIndex: 100, padding: '12px 20px', minHeight: '44px', borderRadius: '15px', border: 'none', background: 'white', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', cursor: 'pointer', fontWeight: 'bold' }}
         >
           Cerrar Juego
         </button>
@@ -83,40 +84,43 @@ export default function HubActividades() {
   }
 
   return (
-    <div style={{ 
-      height: '100dvh', backgroundColor: '#f7f3eb', padding: '2rem',
+    <div style={{
+      height: '100dvh', backgroundColor: '#f7f3eb',
+      padding: 'calc(1rem + env(safe-area-inset-top)) clamp(1rem, 4vw, 2rem) calc(90px + env(safe-area-inset-bottom)) clamp(1rem, 4vw, 2rem)',
       fontFamily: 'system-ui, -apple-system, sans-serif', display: 'flex', flexDirection: 'column', overflow: 'hidden'
     }}>
       {/* Header */}
-      <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+      <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem', marginBottom: 'clamp(1rem, 3vw, 2rem)' }}>
         <div>
-          <button 
+          <button
             onClick={() => {
               if (activeNivelFilter) setActiveNivelFilter(null);
               else if (activeEje) setActiveEje(null);
               else if (activePersonaje) setActivePersonaje(null);
               else navigate('/');
-            }} 
-            style={{ border: 'none', background: 'transparent', fontSize: '1.5rem', cursor: 'pointer', marginBottom: '0.5rem' }}
+            }}
+            style={{ border: 'none', background: 'transparent', fontSize: '1.5rem', cursor: 'pointer', padding: '8px 12px 8px 0', marginBottom: '0.25rem' }}
           >
             ← Volver
           </button>
-          <h1 style={{ color: '#334155', fontSize: '2.5rem', margin: 0 }}>
+          <h1 style={{ color: '#334155', fontSize: 'clamp(1.5rem, 5vw, 2.5rem)', margin: 0 }}>
             {activePersonaje ? `Biblioteca de ${PERSONAJES_META[activePersonaje].nombre}` : 'Biblioteca Maestra VANI'}
           </h1>
-          <p style={{ color: '#64748b', fontSize: '1.2rem', margin: '0.5rem 0 0 0' }}>
+          <p style={{ color: '#64748b', fontSize: 'clamp(0.95rem, 3vw, 1.2rem)', margin: '0.5rem 0 0 0' }}>
             {activePersonaje ? 'Elige una categoría de entrenamiento.' : 'Selecciona un personaje para ver sus actividades.'}
           </p>
         </div>
-        
-        {/* Toggle Modo Desarrollador */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'white', padding: '10px 20px', borderRadius: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-          <span style={{ fontSize: '1.5rem' }}>🛠️</span>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', color: '#475569', fontWeight: 'bold' }}>
-            Modo Dev
-            <input type="checkbox" checked={state.developerMode} onChange={toggleDeveloperMode} style={{ width: '20px', height: '20px' }} />
-          </label>
-        </div>
+
+        {/* Toggle Modo Desarrollador (solo en entorno de desarrollo) */}
+        {import.meta.env.DEV && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'white', padding: '10px 20px', borderRadius: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+            <span style={{ fontSize: '1.5rem' }}>🛠️</span>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', color: '#475569', fontWeight: 'bold' }}>
+              Modo Dev
+              <input type="checkbox" checked={state.developerMode} onChange={toggleDeveloperMode} style={{ width: '20px', height: '20px' }} />
+            </label>
+          </div>
+        )}
       </div>
       
       {/* Content Area */}
@@ -234,6 +238,7 @@ export default function HubActividades() {
         )}
 
       </div>
+      <BottomNav />
       <style>{`
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

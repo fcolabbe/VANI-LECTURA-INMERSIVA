@@ -4,6 +4,7 @@ import { vaniData } from '../data/vaniData';
 import { db } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
+import BackButton from '../components/BackButton';
 
 export default function TestLectura() {
   const { personajeId, capituloId } = useParams();
@@ -106,22 +107,14 @@ export default function TestLectura() {
       position: 'relative'
     }}>
       
-      {/* Botón Volver - Área Táctil 64x64 */}
-      <button 
+      {/* Botón Volver */}
+      <BackButton
         onClick={() => navigate(`/capitulo/${personajeId}/${capituloId}`)}
-        style={{
-          position: 'absolute', top: '20px', left: '20px', width: '64px', height: '64px',
-          borderRadius: '50%', background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(0,0,0,0.06)', color: '#4a4a4a', 
-          fontSize: '1.2rem', cursor: 'pointer', zIndex: 10,
-          boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}
-      >
-        ←
-      </button>
+        style={{ border: '1px solid rgba(0,0,0,0.06)', color: '#4a4a4a', zIndex: 10, boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}
+      />
       
       {/* Cabecera Fija */}
-      <h1 style={{ color: '#2a241c', fontSize: '2.5rem', marginBottom: '1.5rem', flexShrink: 0, textAlign: 'center', fontWeight: 'bold', marginTop: '40px' }}>
+      <h1 style={{ color: '#2a241c', fontSize: 'clamp(1.7rem, 6vw, 2.5rem)', marginBottom: '1.5rem', flexShrink: 0, textAlign: 'center', fontWeight: 'bold', marginTop: 'calc(40px + env(safe-area-inset-top))', padding: '0 84px' }}>
         Reto de Velocidad Lectora
       </h1>
 
@@ -154,13 +147,13 @@ export default function TestLectura() {
         {fase === 'leyendo' && (
           <div style={{ maxWidth: '800px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div style={{
-              backgroundColor: 'white', padding: '3rem', borderRadius: '24px',
+              backgroundColor: 'white', padding: 'clamp(1.25rem, 5vw, 3rem)', borderRadius: '24px',
               border: '1px solid rgba(0, 0, 0, 0.05)',
               boxShadow: '0 10px 30px rgba(0,0,0,0.03)', marginBottom: '3rem', width: '100%'
             }}>
-              <p style={{ 
-                fontSize: '1.8rem', lineHeight: '2', color: '#2a241c', // Mayor contraste
-                margin: 0, textAlign: 'left', fontWeight: '500' 
+              <p style={{
+                fontSize: 'clamp(1.25rem, 4.5vw, 1.8rem)', lineHeight: '1.9', color: '#2a241c', // Mayor contraste
+                margin: 0, textAlign: 'left', fontWeight: '500'
               }}>
                 {textoCompleto}
               </p>
@@ -183,7 +176,7 @@ export default function TestLectura() {
         {fase === 'resultados' && (
           <div style={{ textAlign: 'center', maxWidth: '500px', animation: 'fadeIn 0.5s ease', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎉</div>
-            <h1 style={{ color: '#2a241c', fontSize: '2.5rem', marginBottom: '1.5rem', fontWeight: 'bold' }}>¡Excelente trabajo!</h1>
+            <h1 style={{ color: '#2a241c', fontSize: 'clamp(1.7rem, 6vw, 2.5rem)', marginBottom: '1.5rem', fontWeight: 'bold' }}>¡Excelente trabajo!</h1>
             
             <div style={{ 
               backgroundColor: 'white', padding: '2rem', borderRadius: '20px', 

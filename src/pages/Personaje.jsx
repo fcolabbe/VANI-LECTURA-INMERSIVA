@@ -219,8 +219,8 @@ export default function Personaje() {
               flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' 
             }}>
               {/* 1. Cabecera Fija */}
-              <div style={{ 
-                padding: '1rem', display: 'flex', alignItems: 'center', gap: '1.5rem', 
+              <div style={{
+                padding: 'calc(1rem + env(safe-area-inset-top)) 1rem 1rem 1rem', display: 'flex', alignItems: 'center', gap: '1.5rem',
                 backgroundColor: 'white', boxShadow: '0 2px 15px rgba(0,0,0,0.03)', zIndex: 10,
                 flexShrink: 0, position: 'sticky', top: 0
               }}>
@@ -242,8 +242,8 @@ export default function Personaje() {
 
               {/* 2. Bloque de Texto Descriptivo */}
               <div style={{ padding: '1.5rem 2rem', flexShrink: 0 }}>
-                <p style={{ 
-                  margin: 0, fontSize: '1.1rem', lineHeight: '1.7', color: '#334155', 
+                <p style={{
+                  margin: 0, fontSize: 'clamp(0.95rem, 2.7vw, 1.1rem)', lineHeight: '1.7', color: '#334155',
                   backgroundColor: 'rgba(255,255,255,0.75)', padding: '1.2rem 1.5rem', borderRadius: '20px',
                   boxShadow: '0 4px 15px rgba(0,0,0,0.02)', border: '1px solid rgba(255,255,255,0.5)',
                   backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', textAlign: 'center'
@@ -251,6 +251,13 @@ export default function Personaje() {
                   {p.quienEs} {p.caracteristicas} {p.queHace}
                 </p>
               </div>
+
+              {/* Fade inferior: señal de que hay más contenido al hacer scroll */}
+              <div aria-hidden="true" style={{
+                position: 'sticky', bottom: 0, width: '100%', height: '36px', marginTop: '-36px',
+                background: 'linear-gradient(to top, #f7f3eb, rgba(247,243,235,0))',
+                pointerEvents: 'none', flexShrink: 0
+              }} />
             </div>
 
             {/* 3. Carrusel Horizontal de Capítulos */}
@@ -268,9 +275,10 @@ export default function Personaje() {
       </div>
 
       {/* 4. Barra Inferior Fija de Actividades/Juegos (Siempre Abajo, en ambos layouts) */}
-      <div style={{ 
-        height: '90px', flexShrink: 0, backgroundColor: 'white', borderTop: '1px solid #e2e8f0', 
-        display: 'flex', alignItems: 'center', justifyContent: 'space-around', padding: '0 1rem',
+      <div style={{
+        minHeight: '90px', flexShrink: 0, backgroundColor: 'white', borderTop: '1px solid #e2e8f0',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-around',
+        padding: '0 1rem env(safe-area-inset-bottom) 1rem',
         boxShadow: '0 -4px 15px rgba(0,0,0,0.03)', zIndex: 20
       }}>
         {juegosSimulados.map(juego => (

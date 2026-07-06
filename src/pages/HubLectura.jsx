@@ -1,18 +1,19 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import BottomNav from '../components/BottomNav';
 
 export default function HubLectura() {
   const navigate = useNavigate();
 
   return (
-    <div style={{ 
-      height: '100dvh', backgroundColor: '#f7f3eb', padding: '2rem',
+    <div style={{
+      height: '100dvh', backgroundColor: '#f7f3eb',
+      padding: 'calc(1rem + env(safe-area-inset-top)) clamp(1rem, 4vw, 2rem) calc(90px + env(safe-area-inset-bottom)) clamp(1rem, 4vw, 2rem)',
       fontFamily: 'system-ui, -apple-system, sans-serif', display: 'flex', flexDirection: 'column', overflow: 'hidden'
     }}>
       <div style={{ flexShrink: 0 }}>
-        <button onClick={() => navigate('/')} style={{ border: 'none', background: 'transparent', fontSize: '1.5rem', cursor: 'pointer', marginBottom: '1rem' }}>← Volver</button>
-        <h1 style={{ color: '#334155', fontSize: '2.5rem', margin: '0 0 1rem 0' }}>Muro de Lectura</h1>
-        <p style={{ color: '#64748b', fontSize: '1.2rem', marginBottom: '2rem' }}>Repite los tests de velocidad lectora para superar tu propio récord.</p>
+        <h1 style={{ color: '#334155', fontSize: 'clamp(1.5rem, 5vw, 2.5rem)', margin: '0 0 1rem 0' }}>Muro de Lectura</h1>
+        <p style={{ color: '#64748b', fontSize: 'clamp(0.95rem, 3vw, 1.2rem)', marginBottom: '2rem' }}>Repite los tests de velocidad lectora para superar tu propio récord.</p>
       </div>
       
       <div className="hide-scrollbar" style={{ flex: 1, overflowY: 'auto', paddingBottom: '2rem' }}>
@@ -32,6 +33,7 @@ export default function HubLectura() {
 
       </div>
       </div>
+      <BottomNav />
       <style>{`
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

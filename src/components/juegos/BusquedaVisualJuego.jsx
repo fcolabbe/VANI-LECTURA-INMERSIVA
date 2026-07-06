@@ -182,7 +182,7 @@ export default function BusquedaVisualJuego({ nivel = 1, onComplete }) {
     >
       {/* Vani Instruction Bubble */}
       <div style={{
-        position: 'absolute', top: 20, left: 20, right: 20, zIndex: 10, 
+        position: 'absolute', top: 'calc(20px + env(safe-area-inset-top))', left: 20, right: 20, zIndex: 10, 
         backgroundColor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)',
         padding: '15px 25px', borderRadius: '20px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
         display: 'flex', alignItems: 'center', gap: '15px', border: '1px solid rgba(255,255,255,0.4)'

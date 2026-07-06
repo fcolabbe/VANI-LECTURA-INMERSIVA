@@ -72,7 +72,7 @@ export default function CanvasNia({ onComplete, onBack }) {
           else navigate('/personaje/nia');
         }}
         style={{
-          position: 'absolute', top: '20px', left: '20px', width: '64px', height: '64px',
+          position: 'absolute', top: 'calc(20px + env(safe-area-inset-top))', left: '20px', width: '64px', height: '64px',
           borderRadius: '50%', background: 'white', border: 'none', color: '#64748b', 
           fontSize: '1.2rem', cursor: 'pointer', zIndex: 10,
           boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
