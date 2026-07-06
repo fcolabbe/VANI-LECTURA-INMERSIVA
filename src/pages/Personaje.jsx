@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, Navigate } from 'react-router-dom';
 import { vaniData } from '../data/vaniData';
 import { useJourney } from '../context/JourneyContext';
 import { useResponsive } from '../hooks/useResponsive';
+import { useNarracionScroll } from '../hooks/useNarracionScroll';
 import VaniGuide from '../components/VaniGuide';
 
 export default function Personaje() {
@@ -11,15 +12,21 @@ export default function Personaje() {
   const { journeyDay } = useJourney();
   const { isTabletLandscape } = useResponsive();
   const [isSpeaking, setIsSpeaking] = useState(false);
-  
+  const audioRef = useRef(null);
+
   const p = vaniData.personajes[id];
+
+  // La descripción scrollea sincronizada con la narración
+  const textoNarrado = p ? `${p.quienEs} ${p.caracteristicas} ${p.queHace}` : '';
+  const textoScrollRef = useNarracionScroll({ isSpeaking, audioRef, text: textoNarrado });
 
   // Play profile description audio on load
   useEffect(() => {
     if (!p) return;
     const audioUrl = `/audio/descripcion_${id}.mp3`;
     const audio = new Audio(audioUrl);
-    
+    audioRef.current = audio;
+
     const textToSpeak = `${p.quienEs} ${p.caracteristicas} ${p.queHace}`;
     let synthUtterance = null;
     const synth = window.speechSynthesis;
@@ -51,6 +58,7 @@ export default function Personaje() {
     return () => {
       clearTimeout(timer);
       audio.pause();
+      audioRef.current = null;
       if (synth) {
         synth.cancel();
       }
@@ -169,7 +177,7 @@ export default function Personaje() {
           // === LAYOUT TABLET HORIZONTAL (PANTALLA DIVIDIDA) ===
           <>
             {/* Panel Izquierdo: Info del Personaje */}
-            <div className="hide-scrollbar" style={{ 
+            <div ref={textoScrollRef} className="hide-scrollbar" style={{
               width: '40%', height: '100%', padding: '2rem',
               display: 'flex', flexDirection: 'column', overflowY: 'auto',
               backgroundColor: 'white', borderRight: '1px solid #e2e8f0',
@@ -214,9 +222,9 @@ export default function Personaje() {
         ) : (
           // === LAYOUT MOVIL VERTICAL ===
           <>
-            {/* Top Box: Textos fijos con scroll interno */}
-            <div className="hide-scrollbar" style={{ 
-              flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' 
+            {/* Top Box: Textos fijos con scroll interno (avanza junto con la narración) */}
+            <div ref={textoScrollRef} className="hide-scrollbar" style={{
+              flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column'
             }}>
               {/* 1. Cabecera Fija */}
               <div style={{

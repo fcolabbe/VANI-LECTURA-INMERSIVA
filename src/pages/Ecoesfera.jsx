@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { vaniData } from '../data/vaniData';
 import { useJourney } from '../context/JourneyContext';
 import { useResponsive } from '../hooks/useResponsive';
 import VaniGuide from '../components/VaniGuide';
 import BackButton from '../components/BackButton';
+import { useNarracionScroll } from '../hooks/useNarracionScroll';
 
 export default function Ecoesfera() {
   const { id } = useParams();
@@ -13,13 +14,19 @@ export default function Ecoesfera() {
   const { isTabletLandscape, isShortLandscape } = useResponsive();
   const eco = vaniData.ecoesferas[id];
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const audioRef = useRef(null);
+
+  // El texto del bioma scrollea sincronizado con la narración
+  const textoNarrado = eco ? `${eco.textoEcoesfera} ${eco.rolPersonajes}` : '';
+  const textoScrollRef = useNarracionScroll({ isSpeaking, audioRef, text: textoNarrado });
 
   // Play biome description audio on load
   useEffect(() => {
     if (!eco) return;
     const audioUrl = `/audio/bioma_${id}.mp3`;
     const audio = new Audio(audioUrl);
-    
+    audioRef.current = audio;
+
     const cleanText = `${eco.textoEcoesfera.replace(/"/g, '')} ${eco.rolPersonajes}`;
     let synthUtterance = null;
     const synth = window.speechSynthesis;
@@ -51,6 +58,7 @@ export default function Ecoesfera() {
     return () => {
       clearTimeout(timer);
       audio.pause();
+      audioRef.current = null;
       if (synth) {
         synth.cancel();
       }
@@ -132,7 +140,7 @@ export default function Ecoesfera() {
         // === LAYOUT TABLET HORIZONTAL (PANTALLA DIVIDIDA) ===
         <>
           {/* Panel Izquierdo: Info de Bioma (compacto si es un teléfono en horizontal) */}
-          <div className="hide-scrollbar" style={{
+          <div ref={textoScrollRef} className="hide-scrollbar" style={{
             width: '40%', height: '100%',
             padding: isShortLandscape ? 'calc(1.25rem + env(safe-area-inset-top)) 1.5rem 1.5rem 1.5rem' : '6rem 2rem 2rem 2rem',
             display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -187,7 +195,7 @@ export default function Ecoesfera() {
             flex: 1, minHeight: 0, padding: '1rem 2rem',
             display: 'flex', flexDirection: 'column', alignItems: 'center'
           }}>
-            <div className="hide-scrollbar" style={{
+            <div ref={textoScrollRef} className="hide-scrollbar" style={{
               maxWidth: '800px', maxHeight: '100%', overflowY: 'auto',
               backgroundColor: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(15px)', WebkitBackdropFilter: 'blur(15px)',
               borderRadius: '24px', padding: '1.5rem 2rem 2.25rem 2rem', textAlign: 'center',

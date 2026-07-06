@@ -30,6 +30,7 @@ export default function Capitulo() {
   const utteranceRef = useRef(null);
   const audioRef = useRef(null);
   const animationFrameIdRef = useRef(null);
+  const lecturaScrollRef = useRef(null);
 
   // Test states
   const [cuenta, setCuenta] = useState(3);
@@ -100,6 +101,25 @@ export default function Capitulo() {
   }, [escenaActual]);
 
   const palabrasCount = parsedWords.length;
+
+  // Mientras Vani lee, el texto sigue a la palabra resaltada (karaoke) con scroll suave
+  useEffect(() => {
+    if (activeWordIndex < 0) return;
+    const cont = lecturaScrollRef.current;
+    if (!cont) return;
+    const wordEl = cont.querySelector(`[data-widx="${activeWordIndex}"]`);
+    if (!wordEl) return;
+    const contRect = cont.getBoundingClientRect();
+    const wordRect = wordEl.getBoundingClientRect();
+    const fueraAbajo = wordRect.bottom > contRect.top + contRect.height * 0.8;
+    const fueraArriba = wordRect.top < contRect.top;
+    if (fueraAbajo || fueraArriba) {
+      cont.scrollTo({
+        top: cont.scrollTop + (wordRect.top - contRect.top) - contRect.height * 0.25,
+        behavior: 'smooth'
+      });
+    }
+  }, [activeWordIndex]);
 
   const startAudioPolling = () => {
     if (!audioRef.current || !audioTimestamps) return;
@@ -521,7 +541,7 @@ export default function Capitulo() {
             display: 'flex', flexDirection: 'column',
             backgroundColor: '#fcfcfc'
           }}>
-          <div className="hide-scrollbar" style={{
+          <div ref={lecturaScrollRef} className="hide-scrollbar" style={{
             flex: 1, minHeight: 0, padding: '1.5rem 1.5rem 0.5rem 1.5rem',
             display: 'flex', flexDirection: 'column', alignItems: 'center',
             overflowY: 'auto', WebkitOverflowScrolling: 'touch'
@@ -539,7 +559,7 @@ export default function Capitulo() {
                 {parsedWords.map((wordObj, index) => {
                   if (wordObj.isMagic) {
                     return (
-                      <span key={index} style={{ display: 'inline-block', marginRight: '0.4rem', position: 'relative' }}>
+                      <span key={index} data-widx={index} style={{ display: 'inline-block', marginRight: '0.4rem', position: 'relative' }}>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -613,8 +633,9 @@ export default function Capitulo() {
                   }
 
                   return (
-                    <span 
-                      key={index} 
+                    <span
+                      key={index}
+                      data-widx={index}
                       style={{
                         display: 'inline-block',
                         marginRight: '0.4rem',

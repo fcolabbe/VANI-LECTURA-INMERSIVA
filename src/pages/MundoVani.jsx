@@ -5,6 +5,7 @@ import { vaniData } from '../data/vaniData';
 import VaniGuide from '../components/VaniGuide';
 import BottomNav from '../components/BottomNav';
 import { useResponsive } from '../hooks/useResponsive';
+import { useNarracionScroll } from '../hooks/useNarracionScroll';
 
 export default function MundoVani() {
   const navigate = useNavigate();
@@ -26,8 +27,9 @@ export default function MundoVani() {
   };
 
   const copyBienvenida = "¡Hola! Te doy la bienvenida a mi mundo. Me llamo Vani y seré tu guía en esta aventura. Mi luz te acompañará en cada paso que des. Aquí viven muchos amigos increíbles. Algunos son muy traviesos y aventureros; otros, criaturas tiernas y adorables. ¡Toca a mis amigos para descubrir todas las historias y juegos que hemos preparado para ti! ¿Empezamos?";
-  // Versión corta para pantallas angostas: el saludo completo se escucha en audio
-  const copyCorto = "¡Hola! Soy Vani, tu guía. Toca a mis amigos para descubrir sus historias. ¿Empezamos?";
+
+  // En pantallas chicas el globo es compacto y el texto scrollea junto con la voz
+  const bubbleScrollRef = useNarracionScroll({ isSpeaking, audioRef, text: copyBienvenida });
 
   useEffect(() => {
     const audio = new Audio('/audio/bienvenida_vani.mp3');
@@ -103,14 +105,20 @@ export default function MundoVani() {
 
       {/* Sección VANI Hero (Ancla Narrativa - FIJA) */}
       <div style={{ padding: modoCompacto ? '0 1.25rem' : '0 2rem', marginBottom: modoCompacto ? '1rem' : '2rem', display: 'flex', alignItems: 'center', gap: modoCompacto ? '12px' : '20px', marginTop: '20px', flexShrink: 0 }}>
-        <div style={{
-          width: modoCompacto ? '64px' : '90px', height: modoCompacto ? '64px' : '90px', borderRadius: '50%',
-          overflow: 'hidden',
-          boxShadow: '0 10px 25px rgba(230, 168, 92, 0.4)',
-          flexShrink: 0,
-          border: '4px solid white',
-          position: 'relative'
-        }}>
+        <div
+          onClick={toggleGreetingAudio}
+          role="button"
+          aria-label={isSpeaking ? 'Pausar saludo de Vani' : 'Escuchar saludo de Vani'}
+          style={{
+            width: modoCompacto ? '64px' : '90px', height: modoCompacto ? '64px' : '90px', borderRadius: '50%',
+            overflow: 'hidden',
+            boxShadow: isSpeaking ? '0 0 18px #fde68a, 0 10px 25px rgba(230, 168, 92, 0.4)' : '0 10px 25px rgba(230, 168, 92, 0.4)',
+            flexShrink: 0,
+            border: '4px solid white',
+            position: 'relative',
+            cursor: 'pointer',
+            transition: 'box-shadow 0.3s ease'
+          }}>
           <img
             src="/vani_avatar.png"
             alt="Hada Vani"
@@ -143,27 +151,20 @@ export default function MundoVani() {
             <h1 style={{ fontSize: modoCompacto ? '1.15rem' : '1.4rem', margin: '0 0 0.3rem 0', color: '#334155', fontWeight: '600' }}>
               ¡Hola, {nombreUsuario}!
             </h1>
-            <p style={{ fontSize: modoCompacto ? '0.9rem' : '1rem', color: '#64748b', margin: 0, lineHeight: '1.4' }}>
-              {modoCompacto ? copyCorto : copyBienvenida}
-            </p>
-          </div>
-
-          {/* En móvil el saludo completo se escucha con este botón */}
-          {modoCompacto && (            <button
-              onClick={toggleGreetingAudio}
-              aria-label={isSpeaking ? 'Pausar saludo de Vani' : 'Escuchar saludo de Vani'}
+            {/* Compacto: el texto completo scrollea sincronizado con la voz de Vani */}
+            <div
+              ref={bubbleScrollRef}
+              className="hide-scrollbar"
               style={{
-                flexShrink: 0, width: '44px', height: '44px', borderRadius: '50%',
-                background: isSpeaking ? '#fef3c7' : '#f1f5f9', border: 'none',
-                fontSize: '1.2rem', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: isSpeaking ? '0 0 12px #fde68a' : 'none',
-                transition: 'all 0.3s ease'
+                maxHeight: modoCompacto ? '4.2em' : 'none',
+                overflowY: modoCompacto ? 'auto' : 'visible'
               }}
             >
-              {isSpeaking ? '⏸️' : '🔊'}
-            </button>
-          )}
+              <p style={{ fontSize: modoCompacto ? '0.9rem' : '1rem', color: '#64748b', margin: 0, lineHeight: '1.4' }}>
+                {copyBienvenida}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
