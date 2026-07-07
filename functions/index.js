@@ -8,7 +8,13 @@ const db = getFirestore();
 
 // Inicializamos el SDK de Gemini. En producción, la API Key debe configurarse en Firebase Secret Manager
 // o usar Application Default Credentials si la función corre bajo la cuenta de servicio de GCP.
-const ai = new GoogleGenAI({}); 
+// En el emulador local puede no haber credenciales: se degrada al análisis determinista.
+let ai = null;
+try {
+  ai = new GoogleGenAI({});
+} catch (e) {
+  console.warn("Gemini SDK no inicializado (sin credenciales); se usará el fallback determinista.", e.message);
+}
 
 // ---------------------------------------------------------------------------
 // PARÁMETROS DE REFERENCIA POR EDAD / NIVEL ESCOLAR
