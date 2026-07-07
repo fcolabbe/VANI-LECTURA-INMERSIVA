@@ -1,5 +1,5 @@
 // Base de Datos Programática de Actividades VANI - V2 (Master Library)
-// Genera más de 100 actividades dinámicas por personaje cruzando motores, niveles y 45 assets.
+// Genera las actividades por personaje cruzando motores x 3 niveles (una instancia por combinación).
 
 const PERSONAJES = ['leo', 'lulu', 'koda', 'nia', 'sora', 'bibi'];
 const CAPITULOS = 15; // Capítulos del 0 al 14
@@ -55,30 +55,28 @@ const generarMasterLibrary = () => {
     
     const propsDisponibles = PROPS_POR_PERSONAJE[personaje] || ['objeto_mágico'];
 
-    // Generamos actividades para cada eje, iterando por motores y 3 niveles de dificultad.
+    // Generamos actividades para cada eje: exactamente UNA por motor y por nivel,
+    // de modo que cada juego exista en sus 3 niveles y el filtro de dificultad
+    // muestre una sola instancia de cada uno (14 motores x 3 niveles = 42 por pj).
     Object.entries(EJES).forEach(([ejeName, motores]) => {
       motores.forEach(motor => {
-        // Cada motor tendrá múltiples variaciones (Nivel 1, 2, 3) repetidas unas cuantas veces para volumen.
         for (let nivel = 1; nivel <= 3; nivel++) {
-          // 3 instancias de cada (motor x nivel) = 3 * 3 * 14 = 126 actividades por pj
-          for (let rep = 1; rep <= 3; rep++) {
-            actIndex++;
-            
-            // Asignar prop contextual (rotativo)
-            const propAsignado = propsDisponibles[actIndex % propsDisponibles.length];
-            
-            library[personaje].push({
-              id: `${personaje}_${motor}_n${nivel}_r${rep}`,
-              eje: ejeName,
-              motor: motor,
-              nivel: nivel,
-              imagenAsset: getAssetForIndex(personaje, actIndex),
-              contextAssets: {
-                propPrincipal: `${personaje}_${propAsignado}`
-              },
-              isUnlocked: false // Por defecto bloqueada (se manejará en estado/telemetría)
-            });
-          }
+          actIndex++;
+
+          // Asignar prop contextual (rotativo)
+          const propAsignado = propsDisponibles[actIndex % propsDisponibles.length];
+
+          library[personaje].push({
+            id: `${personaje}_${motor}_n${nivel}`,
+            eje: ejeName,
+            motor: motor,
+            nivel: nivel,
+            imagenAsset: getAssetForIndex(personaje, actIndex),
+            contextAssets: {
+              propPrincipal: `${personaje}_${propAsignado}`
+            },
+            isUnlocked: false // Por defecto bloqueada (se manejará en estado/telemetría)
+          });
         }
       });
     });

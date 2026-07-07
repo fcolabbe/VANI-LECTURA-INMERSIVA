@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { MASTER_LIBRARY } from '../data/actividadesData';
 import { useTelemetry } from './useTelemetry';
 import { evaluateZDP } from '../utils/aiAdaptiveEngine';
+import { motoresParaGaps } from '../utils/metricasClinicas';
+import { useAuth } from '../context/AuthContext';
+import { db } from '../firebase';
 
 // Storage Key
 const STORAGE_KEY = 'vani_activities_state';
@@ -13,13 +17,37 @@ const getRandomElements = (arr, count) => {
 };
 
 export const useActivities = () => {
-  const { telemetry } = useTelemetry();
-  
+  const { telemetry, recordActivity } = useTelemetry();
+  const { activeProfile } = useAuth();
+
   const [state, setState] = useState({
     assignments: {}, // { "leo_capitulo_1": ["id1", "id2", "id3"] }
     unlockedIds: [], // ["id1", "id2", ...]
     developerMode: false
   });
+
+  // Plan de apoyo del niño (gaps detectados por el informe clínico).
+  // Cuando hay gaps activos, solo se desbloquean las actividades dirigidas a mejorarlos.
+  // Se guarda keyed por perfil para descartar datos de un perfil anterior sin resets síncronos.
+  const [planApoyoPorPerfil, setPlanApoyoPorPerfil] = useState(null);
+
+  useEffect(() => {
+    if (!db || !activeProfile?.id) return;
+    const perfilId = activeProfile.id;
+    const unsubscribe = onSnapshot(
+      doc(db, 'planes_apoyo', perfilId),
+      (snap) => setPlanApoyoPorPerfil({ perfilId, data: snap.exists() ? snap.data() : null }),
+      (error) => {
+        console.warn('No se pudo cargar el plan de apoyo:', error.message);
+        setPlanApoyoPorPerfil({ perfilId, data: null });
+      }
+    );
+    return unsubscribe;
+  }, [activeProfile?.id]);
+
+  const planApoyo = (activeProfile?.id && planApoyoPorPerfil?.perfilId === activeProfile.id)
+    ? planApoyoPorPerfil.data
+    : null;
 
   // Load from local storage
   useEffect(() => {
@@ -44,12 +72,16 @@ export const useActivities = () => {
    */
   const getActivitiesForChapter = useCallback((personaje, capitulo, nivelDificultad = 1) => {
     const key = `${personaje}_capitulo_${capitulo}`;
-    
-    // Si ya existen, retornarlas
+
+    // Si ya existen, retornarlas (si referencian ids de una versión anterior de la
+    // librería y ya no resuelven, se descartan y se reasignan más abajo)
     if (state.assignments[key]) {
-      return state.assignments[key]
+      const existentes = state.assignments[key]
         .map(id => MASTER_LIBRARY[personaje]?.find(a => a.id === id))
         .filter(Boolean);
+      if (existentes.length === state.assignments[key].length) {
+        return existentes;
+      }
     }
 
     // Si no existen, crear una nueva asignación: 1 de Atencion, 1 de Memoria, 1 de Lectura
@@ -100,21 +132,27 @@ export const useActivities = () => {
   const getLibraryForCharacter = useCallback((personaje) => {
     const recommendedMaxLevel = evaluateZDP(telemetry);
     const acts = MASTER_LIBRARY[personaje] || [];
-    
+
+    // Con gaps activos, solo los motores que trabajan esas habilidades quedan disponibles
+    const gapsActivos = planApoyo?.gaps?.length ? planApoyo.gaps : null;
+    const motoresDirigidos = gapsActivos ? motoresParaGaps(gapsActivos) : null;
+
     return acts.map(a => {
       const unlockedByStory = isUnlocked(a.id);
       const isTooHard = a.nivel > recommendedMaxLevel;
-      
+      const fueraDelPlan = motoresDirigidos ? !motoresDirigidos.includes(a.motor) : false;
+
       // Si estamos en developer mode, sobreescribimos todo
-      const finalUnlocked = state.developerMode ? true : (unlockedByStory && !isTooHard);
-      
+      const finalUnlocked = state.developerMode ? true : (unlockedByStory && !isTooHard && !fueraDelPlan);
+
       return {
         ...a,
         isUnlocked: finalUnlocked,
-        aiLocked: !state.developerMode && unlockedByStory && isTooHard // Bloqueado por IA porque supera ZDP a pesar de estar descubierto
+        aiLocked: !state.developerMode && unlockedByStory && isTooHard, // Bloqueado por IA porque supera ZDP a pesar de estar descubierto
+        planLocked: !state.developerMode && unlockedByStory && !isTooHard && fueraDelPlan // Bloqueado por plan de apoyo (gap activo)
       };
     });
-  }, [isUnlocked, MASTER_LIBRARY, telemetry, state.developerMode]);
+  }, [isUnlocked, MASTER_LIBRARY, telemetry, state.developerMode, planApoyo]);
 
   const toggleDeveloperMode = () => {
     saveState({
@@ -129,6 +167,8 @@ export const useActivities = () => {
     isUnlocked,
     getLibraryForCharacter,
     toggleDeveloperMode,
+    recordActivity,
+    planApoyo,
     recommendedMaxLevel: evaluateZDP(telemetry)
   };
 };

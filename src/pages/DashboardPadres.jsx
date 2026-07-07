@@ -3,16 +3,39 @@ import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
+import { NOMBRES_HABILIDAD } from '../utils/metricasClinicas';
 import html2pdf from 'html2pdf.js';
 
 export default function DashboardPadres() {
   const navigate = useNavigate();
   const { tutorData, perfilesNinos, activeProfile, selectProfile } = useAuth();
-  
+
   const [diagnosticos, setDiagnosticos] = useState([]);
+  const [informesActividades, setInformesActividades] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   const reportRef = useRef();
+
+  // Escuchar informes de actividades (generados por Gemini al completar juegos)
+  useEffect(() => {
+    if (!db || !activeProfile) {
+      setInformesActividades([]);
+      return;
+    }
+    const q = query(
+      collection(db, "informes_tutor"),
+      where("perfilId", "==", activeProfile.id)
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const docs = [];
+      snapshot.forEach((doc) => docs.push({ id: doc.id, ...doc.data() }));
+      docs.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+      setInformesActividades(docs);
+    }, (error) => {
+      console.error("Error cargando informes de actividades:", error);
+    });
+    return () => unsubscribe();
+  }, [activeProfile]);
 
   // Escuchar cambios en los diagnósticos del NIÑO SELECCIONADO
   useEffect(() => {
@@ -147,13 +170,63 @@ export default function DashboardPadres() {
                 </div>
               </div>
 
-              {/* Gaps / Brechas Inteligentes */}
-              <div style={{ background: '#eff6ff', borderLeft: '4px solid #3b82f6', borderRadius: '0 16px 16px 0', padding: '20px', marginBottom: '30px' }}>
-                <h3 style={{ margin: '0 0 10px 0', color: '#1e40af', fontSize: '1.1rem' }}>💡 Sugerencia del Sistema VANI</h3>
-                <p style={{ margin: 0, color: '#1e3a8a', lineHeight: '1.5' }}>
-                  Hemos detectado una tasa alta de clics fallidos en Laberintos. Sugerimos descargar y jugar las actividades impresas de "Motricidad Fina" o usar el paquete extra de "Trazos Guiados".
-                </p>
-              </div>
+              {/* Gaps / Brechas detectadas por el sistema */}
+              {informesActividades[0]?.gaps?.length > 0 ? (
+                <div style={{ background: '#eff6ff', borderLeft: '4px solid #3b82f6', borderRadius: '0 16px 16px 0', padding: '20px', marginBottom: '30px' }}>
+                  <h3 style={{ margin: '0 0 10px 0', color: '#1e40af', fontSize: '1.1rem' }}>🎯 Plan de Apoyo Activo</h3>
+                  <p style={{ margin: '0 0 12px 0', color: '#1e3a8a', lineHeight: '1.5' }}>
+                    El sistema detectó brechas y enfocó las actividades de {activeProfile.nombre} en reforzarlas:
+                  </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {informesActividades[0].gaps.map((g, i) => (
+                      <span key={i} style={{
+                        background: g.severidad === 'alta' ? '#fee2e2' : g.severidad === 'moderada' ? '#fef3c7' : '#dcfce7',
+                        color: g.severidad === 'alta' ? '#991b1b' : g.severidad === 'moderada' ? '#92400e' : '#166534',
+                        padding: '6px 12px', borderRadius: '14px', fontSize: '0.85rem', fontWeight: 'bold'
+                      }}>
+                        {NOMBRES_HABILIDAD[g.habilidad] || g.habilidad} · {g.severidad}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div style={{ background: '#f0fdf4', borderLeft: '4px solid #22c55e', borderRadius: '0 16px 16px 0', padding: '20px', marginBottom: '30px' }}>
+                  <h3 style={{ margin: '0 0 10px 0', color: '#166534', fontSize: '1.1rem' }}>💡 Sistema VANI</h3>
+                  <p style={{ margin: 0, color: '#14532d', lineHeight: '1.5' }}>
+                    Sin brechas activas: el desempeño en las actividades está dentro de los rangos orientativos para su edad.
+                  </p>
+                </div>
+              )}
+
+              {/* Informes de Actividades (generados por IA al completar juegos) */}
+              {informesActividades.length > 0 && (
+                <>
+                  <h2 style={{ fontSize: '1.3rem', margin: '30px 0 20px 0', color: '#78350f', fontWeight: 'bold' }}>Informes de Actividades</h2>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '10px' }}>
+                    {informesActividades.slice(0, 5).map((inf) => (
+                      <div key={inf.id} style={{ background: '#ffffff', borderRadius: '16px', padding: '25px', border: '1px solid rgba(0, 0, 0, 0.05)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
+                          <span style={{ fontWeight: 'bold', color: '#78350f' }}>
+                            {inf.actividadOrigen?.eje ? `Actividad de ${inf.actividadOrigen.eje.toLowerCase()}` : 'Actividad'} · Nivel {inf.actividadOrigen?.nivel}
+                          </span>
+                          <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>{new Date(inf.fecha).toLocaleDateString()}</span>
+                        </div>
+                        <p style={{ color: '#4a4a4a', fontSize: '1rem', lineHeight: '1.6', margin: '0 0 10px 0', whiteSpace: 'pre-wrap' }}>
+                          {inf.informe}
+                        </p>
+                        {inf.sugerirEvaluacionProfesional && (
+                          <p style={{ margin: '10px 0 0 0', padding: '10px 14px', background: '#fef2f2', borderRadius: '10px', color: '#991b1b', fontSize: '0.9rem' }}>
+                            ⚠️ Se sugiere consultar con un especialista para una evaluación más completa.
+                          </p>
+                        )}
+                        <p style={{ margin: '10px 0 0 0', fontSize: '0.75rem', color: '#94a3b8' }}>
+                          Informe orientativo generado por IA. No constituye diagnóstico clínico.
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
 
               {/* Diagnósticos de Lectura Inteligentes */}
               <h2 style={{ fontSize: '1.3rem', margin: '30px 0 20px 0', color: '#78350f', fontWeight: 'bold' }}>Historial Clínico de Lectura</h2>

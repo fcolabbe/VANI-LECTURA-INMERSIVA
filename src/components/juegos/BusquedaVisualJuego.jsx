@@ -96,11 +96,27 @@ export default function BusquedaVisualJuego({ nivel = 1, onComplete }) {
   const containerRef = useRef(null);
 
   // Metrics
+  const espacialInicial = () => ({
+    izquierda: { aciertos: 0, errores: 0 }, derecha: { aciertos: 0, errores: 0 },
+    arriba: { aciertos: 0, errores: 0 }, abajo: { aciertos: 0, errores: 0 }
+  });
   const metrics = useRef({
     startTime: 0,
     missClicks: 0,
-    findTimes: []
+    findTimes: [],
+    espacial: espacialInicial()
   });
+
+  // Registra en qué zona de la pantalla ocurrió cada acierto/error (telemetría clínica)
+  const registrarEspacial = (x, y, exito) => {
+    const container = containerRef.current;
+    if (!container) return;
+    const ladoH = x < container.clientWidth / 2 ? 'izquierda' : 'derecha';
+    const ladoV = y < container.clientHeight / 2 ? 'arriba' : 'abajo';
+    const campo = exito ? 'aciertos' : 'errores';
+    metrics.current.espacial[ladoH][campo] += 1;
+    metrics.current.espacial[ladoV][campo] += 1;
+  };
 
   useEffect(() => {
     initLevel();
@@ -117,6 +133,7 @@ export default function BusquedaVisualJuego({ nivel = 1, onComplete }) {
       metrics.current.startTime = Date.now();
       metrics.current.missClicks = 0;
       metrics.current.findTimes = [];
+      metrics.current.espacial = espacialInicial();
       setIsDone(false);
 
       if (data.audioHint && 'speechSynthesis' in window) {
@@ -136,6 +153,9 @@ export default function BusquedaVisualJuego({ nivel = 1, onComplete }) {
     const findTime = (Date.now() - metrics.current.startTime) / 1000;
     metrics.current.findTimes.push(findTime);
 
+    const targetEncontrado = levelData.targets.find(t => t.id === tId);
+    if (targetEncontrado) registrarEspacial(targetEncontrado.x, targetEncontrado.y, true);
+
     setLevelData(prev => {
       const newTargets = prev.targets.map(t => t.id === tId ? { ...t, found: true } : t);
       
@@ -148,9 +168,11 @@ export default function BusquedaVisualJuego({ nivel = 1, onComplete }) {
     });
   };
 
-  const handleBackgroundClick = () => {
+  const handleBackgroundClick = (e) => {
     if (!isDone) {
       metrics.current.missClicks += 1;
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (rect) registrarEspacial(e.clientX - rect.left, e.clientY - rect.top, false);
     }
   };
 
@@ -164,6 +186,7 @@ export default function BusquedaVisualJuego({ nivel = 1, onComplete }) {
         tiempoCompletadoSegundos: totalTime,
         tiempoPromedioPorObjeto: avgTimePerTarget.toFixed(2),
         intentosFallidos: metrics.current.missClicks,
+        respuestasEspaciales: metrics.current.espacial,
         nivelAsignado: nivel
       });
     }

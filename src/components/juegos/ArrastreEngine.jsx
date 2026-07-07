@@ -37,7 +37,22 @@ export default function ArrastreEngine({ nivel = 1, onComplete }) {
   const [draggingId, setDraggingId] = useState(null);
   const dragOffset = useRef({ x: 0, y: 0 });
   const containerRef = useRef(null);
-  const metrics = useRef({ startTime: 0, missDrops: 0 });
+  const espacialInicial = () => ({
+    izquierda: { aciertos: 0, errores: 0 }, derecha: { aciertos: 0, errores: 0 },
+    arriba: { aciertos: 0, errores: 0 }, abajo: { aciertos: 0, errores: 0 }
+  });
+  const metrics = useRef({ startTime: 0, missDrops: 0, espacial: espacialInicial() });
+
+  // Registra dónde ocurrió cada intento (lateralidad y eje vertical) para la telemetría clínica
+  const registrarEspacial = (x, y, exito) => {
+    const container = containerRef.current;
+    if (!container) return;
+    const ladoH = x < container.clientWidth / 2 ? 'izquierda' : 'derecha';
+    const ladoV = y < container.clientHeight / 2 ? 'arriba' : 'abajo';
+    const campo = exito ? 'aciertos' : 'errores';
+    metrics.current.espacial[ladoH][campo] += 1;
+    metrics.current.espacial[ladoV][campo] += 1;
+  };
   const [isDone, setIsDone] = useState(false);
 
   useEffect(() => {
@@ -72,7 +87,7 @@ export default function ArrastreEngine({ nivel = 1, onComplete }) {
     });
 
     setItems(newItems);
-    metrics.current = { startTime: Date.now(), missDrops: 0 };
+    metrics.current = { startTime: Date.now(), missDrops: 0, espacial: espacialInicial() };
     setIsDone(false);
   };
 
@@ -100,8 +115,10 @@ export default function ArrastreEngine({ nivel = 1, onComplete }) {
     setItems(prev => {
       let miss = false;
       let complete = true;
+      let dropPoint = null;
       const newItems = prev.map(item => {
         if (item.id === draggingId) {
+          dropPoint = { x: item.x + item.width / 2, y: item.y + item.height / 2 };
           if (data.type === 'categorization') {
             // Check intersection with zones (zones are hardcoded to upper half)
             const zoneWidth = container.clientWidth / data.zones.length;
@@ -135,7 +152,8 @@ export default function ArrastreEngine({ nivel = 1, onComplete }) {
       });
 
       if (miss) metrics.current.missDrops += 1;
-      
+      if (dropPoint) registrarEspacial(dropPoint.x, dropPoint.y, !miss);
+
       const allPlaced = newItems.every(i => i.placed);
       if (allPlaced) {
         finishGame();
@@ -153,6 +171,7 @@ export default function ArrastreEngine({ nivel = 1, onComplete }) {
       onComplete({
         tiempoCompletadoSegundos: timeTaken,
         intentosFallidos: metrics.current.missDrops,
+        respuestasEspaciales: metrics.current.espacial,
         nivelAsignado: nivel
       });
     }

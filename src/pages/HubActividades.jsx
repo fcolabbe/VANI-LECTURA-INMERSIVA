@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { collection, addDoc } from 'firebase/firestore';
 import BottomNav from '../components/BottomNav';
 import { useActivities } from '../hooks/useActivities';
 import { MASTER_LIBRARY, ENGINE_TYPES } from '../data/actividadesData';
+import { construirRegistroActividad, NOMBRES_HABILIDAD } from '../utils/metricasClinicas';
+import { useAuth } from '../context/AuthContext';
+import { db } from '../firebase';
 
 import LaberintoJuego from '../components/juegos/LaberintoJuego';
 import BusquedaVisualJuego from '../components/juegos/BusquedaVisualJuego';
@@ -30,17 +34,50 @@ const PERSONAJES_META = {
 
 export default function HubActividades() {
   const navigate = useNavigate();
-  const { state, isUnlocked, toggleDeveloperMode, getLibraryForCharacter } = useActivities();
-  
+  const { state, isUnlocked, toggleDeveloperMode, getLibraryForCharacter, recordActivity, planApoyo } = useActivities();
+  const { activeProfile } = useAuth();
+
   const [activePersonaje, setActivePersonaje] = useState(null);
   const [activeEje, setActiveEje] = useState(null);
   const [activeActivity, setActiveActivity] = useState(null);
   const [activeNivelFilter, setActiveNivelFilter] = useState(null); // null = all, 1, 2, 3
+  // Algunos motores disparan onComplete desde un updater de estado (doble invocación
+  // en StrictMode): este flag garantiza un solo registro por partida.
+  const completadoRef = useRef(false);
 
-  const handleComplete = (metricas) => {
-    console.log("Actividad Completada. Métricas silenciosas capturadas:", metricas);
-    // Aqui podriamos guardar score pero dijimos cero feedback visual.
+  const abrirActividad = (act) => {
+    completadoRef.current = false;
+    setActiveActivity(act);
+  };
+
+  const handleComplete = async (metricasCrudas) => {
+    if (completadoRef.current) return;
+    completadoRef.current = true;
+
+    const actividad = activeActivity;
+    // Cero feedback visual para el niño: la evaluación ocurre "por debajo".
     setTimeout(() => setActiveActivity(null), 1500);
+    if (!actividad) return;
+
+    // 1. Telemetría local (motor adaptativo ZDP)
+    recordActivity(actividad.motor, metricasCrudas);
+
+    // 2. Registro clínico normalizado → Firestore (dispara el informe de Gemini en el backend)
+    const registro = construirRegistroActividad({
+      actividad,
+      raw: metricasCrudas,
+      perfil: activeProfile,
+      personajeId: activePersonaje
+    });
+    console.log('Registro clínico de actividad:', registro);
+
+    if (db) {
+      try {
+        await addDoc(collection(db, 'telemetria_actividades'), registro);
+      } catch (e) {
+        console.error('Error guardando telemetría de actividad', e);
+      }
+    }
   };
 
   const renderEngine = (act) => {
@@ -123,6 +160,21 @@ export default function HubActividades() {
         )}
       </div>
       
+      {/* Banner de Plan de Apoyo activo */}
+      {planApoyo?.gaps?.length > 0 && (
+        <div style={{
+          flexShrink: 0, background: '#fefce8', border: '1px solid #fde047', borderRadius: '16px',
+          padding: '12px 18px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '10px'
+        }}>
+          <span style={{ fontSize: '1.5rem' }}>🎯</span>
+          <p style={{ margin: 0, color: '#713f12', fontSize: '0.95rem', lineHeight: '1.4' }}>
+            <strong>Plan de apoyo activo:</strong> Vani está enfocando las actividades en{' '}
+            {planApoyo.gaps.map(g => NOMBRES_HABILIDAD[g.habilidad || g] || g.habilidad || g).join(', ')}.
+            Las demás se desbloquearán al cerrar estas brechas.
+          </p>
+        </div>
+      )}
+
       {/* Content Area */}
       <div className="hide-scrollbar" style={{ flex: 1, overflowY: 'auto', paddingBottom: '2rem' }}>
         
@@ -201,12 +253,13 @@ export default function HubActividades() {
                 .map((act, idx) => {
                 const unlocked = act.isUnlocked;
                 const isAiLocked = act.aiLocked;
+                const isPlanLocked = act.planLocked;
 
                 return (
                   <div 
                     key={act.id} 
                     onClick={() => {
-                      if (unlocked) setActiveActivity(act);
+                      if (unlocked) abrirActividad(act);
                     }}
                     style={{ 
                       background: 'white', borderRadius: '16px', overflow: 'hidden', cursor: unlocked ? 'pointer' : 'not-allowed',
@@ -217,8 +270,10 @@ export default function HubActividades() {
                     <div style={{ width: '100%', height: '120px', background: '#f8fafc', backgroundImage: `url(${act.imagenAsset})`, backgroundSize: 'cover', backgroundPosition: 'center', filter: unlocked ? 'none' : 'grayscale(100%) blur(2px)' }} />
                     
                     {!unlocked && (
-                      <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -70%)', fontSize: '2rem', background: 'rgba(255,255,255,0.8)', borderRadius: '50%', padding: '10px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {isAiLocked ? '🌱' : '🔒'}
+                      <div
+                        title={isPlanLocked ? 'Bloqueada por plan de apoyo: primero las actividades dirigidas' : isAiLocked ? 'Se desbloquea al ganar más experiencia' : 'Bloqueada'}
+                        style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -70%)', fontSize: '2rem', background: 'rgba(255,255,255,0.8)', borderRadius: '50%', padding: '10px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {isPlanLocked ? '🎯' : isAiLocked ? '🌱' : '🔒'}
                       </div>
                     )}
 
