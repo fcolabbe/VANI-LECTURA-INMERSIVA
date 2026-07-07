@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 // Motor genérico de Busca Diferencias
 export default function DiferenciasEngine({ 
   nivel = 1, 
-  imageSrc = '/personaje_cuento0.png', // Imagen base
+  imageSrc = '/leo_cuento1_1.png', // Imagen base
   onComplete 
 }) {
   const containerRef = useRef(null);

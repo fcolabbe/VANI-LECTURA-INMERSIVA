@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 // Motor genérico de Coloreado Mágico
 export default function ColorEngine({ 
   nivel = 1, 
-  imageSrc = '/personaje_cuento0.png',
+  imageSrc = '/leo_cuento1_1.png',
   onComplete 
 }) {
   const containerRef = useRef(null);

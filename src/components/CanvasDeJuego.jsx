@@ -142,7 +142,7 @@ function DynamicBiomeGame({ personajeId, capituloNum, onComplete, onBack }) {
     const img = new Image();
     img.src = actividadActual.imagenAsset;
     img.onload = () => setValidatedImage(actividadActual.imagenAsset);
-    img.onerror = () => setValidatedImage('/personaje_cuento0.png'); // Fallback seguro
+    img.onerror = () => setValidatedImage('/leo_cuento1_1.png'); // Fallback seguro
   }, [actividadActual]);
 
   const handleEngineComplete = (metricasSilenciosas) => {

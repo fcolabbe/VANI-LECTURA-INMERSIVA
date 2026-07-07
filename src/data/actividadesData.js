@@ -40,10 +40,12 @@ const PROPS_POR_PERSONAJE = {
 };
 
 const getAssetForIndex = (personaje, index) => {
-  // Rotamos entre cuento0 a cuento14, e img 1 a 3. Por ahora mock con personaje_cuentoX.png
-  // Cuando estén todas las imgs: `/${personaje}_cap${Math.floor((index%45)/3)}_img${(index%3)+1}.png`
-  const imgNum = (index % 3); 
-  return `/${personaje}_cuento${imgNum}.png`; 
+  // Cada personaje tiene 42 imágenes de escena reales: {p}_cuento{1..14}_{1..3}.png,
+  // exactamente una por actividad (14 motores x 3 niveles). Asignación 1:1 sin repetir.
+  const i = (index - 1) % 42;               // 0..41
+  const capitulo = Math.floor(i / 3) + 1;   // 1..14
+  const escena = (i % 3) + 1;               // 1..3
+  return `/${personaje}_cuento${capitulo}_${escena}.png`;
 };
 
 const generarMasterLibrary = () => {

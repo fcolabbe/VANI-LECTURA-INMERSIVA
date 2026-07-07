@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 // Recibe una imagen (src) y la corta en gridCols x gridRows pedazos.
 export default function RompecabezasEngine({ 
   nivel = 1, 
-  imageSrc = '/personaje_cuento0.png', // Fallback a una imagen existente de la app
+  imageSrc = '/leo_cuento1_1.png', // Fallback a una imagen existente de la app
   onComplete 
 }) {
   const containerRef = useRef(null);
